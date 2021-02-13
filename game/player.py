@@ -62,7 +62,7 @@ class PlayerThread(Thread):
             
 
     def check_first(self):
-        with self.master_.global_object.check_first_lock:
+        with self.master_.global_object.check_first_lock:　#TODO ちゃんと他の人が設定中なんで待ってねって言ったほうが親切か.
             if self.master_.global_object.player_num is None:
                 ok_send = self.send_data("you are the first player!\nHow many players? > ", with_CR=False)
                 while True:
