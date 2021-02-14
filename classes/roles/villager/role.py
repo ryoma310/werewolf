@@ -1,12 +1,13 @@
 from classes.abst_classes.role_abst import Role_AbstClass
 from classes.abst_classes.action_abst import Action_AbstClass
-from classes.util import WIN_CONDITION
+from classes.util import WIN_CONDITION, TIME_OF_DAY
 
-from .knowledges import Knowledge
+from .knowledge import Knowledge
 from .action import Action
 
 """
 values: (本当にただの変数)
+    role_name (str):    役職名
     player_name (str):  名前
     log (str):          これまでの送信ログをためておく
 
@@ -20,8 +21,15 @@ functions: (といいつつannotationでpropertyなものも)
 class Villager_Role(Role_AbstClass):
     def __init__(self, name):
         super().__init__(name)
+        self.__role_name = "villager"
         self.__actions = Action()
         self.__knowledges = Knowledge()
+
+
+    # 役職名: abstractproperty implementation
+    @property
+    def role_name(self) -> str:
+        return self.__role_name
 
 
     # 勝利条件: abstractproperty implementation

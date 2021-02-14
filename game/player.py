@@ -3,6 +3,8 @@ import socket
 import sys
 import errno
 import threading
+from classes.abst_classes.role_abst import Role_AbstClass
+import classes.roles
 
 class PlayerThread(Thread):
     def __init__(self, soc, master_):
@@ -15,6 +17,7 @@ class PlayerThread(Thread):
         self.listen_broadcast = False
         self.end_flag = False
         self.log = ""
+        self.role:Role_AbstClass = None
     
 
     def initialize(self):
@@ -62,7 +65,8 @@ class PlayerThread(Thread):
             
 
     def check_first(self):
-        with self.master_.global_object.check_first_lock:　#TODO ちゃんと他の人が設定中なんで待ってねって言ったほうが親切か.
+        #TODO ちゃんと他の人が設定中なんで待ってねって言ったほうが親切か.
+        with self.master_.global_object.check_first_lock:
             if self.master_.global_object.player_num is None:
                 ok_send = self.send_data("you are the first player!\nHow many players? > ", with_CR=False)
                 while True:
@@ -97,6 +101,33 @@ class PlayerThread(Thread):
         self.master_.new_player(self)
 
 
+    def select_role(self):
+        self.master_.global_object.event_players_role_select.wait()
+
+        self.listen_broadcast = False
+        role_dict_ = self.master_.global_object.roles_dict
+
+        ok_send = self.send_data("select role > ", with_CR=False)
+        while True:
+            if not ok_send:
+                sys.exit(0)
+            ok_recv, data = self.recv_data()
+            if not ok_recv:
+                sys.exit(0)
+            if data.isdigit() and (int(data) in role_dict_.keys()):
+                role_ = getattr(classes.roles, role_dict_[int(data)]).player_instance(self.player_name)
+                self.role = role_
+                self.master_.wait_answer_done()
+                ok_send = self.send_data(f"OK, you are {role_.role_name}\n")
+                break
+            else:
+                ok_send = self.send_data("please enter role number\nselect role > ", with_CR=False)
+
+
+        self.listen_broadcast = True
+        self.master_.global_object.event_players_role_select.wait() # 他のスレッドの終了待ち
+
+
     def run(self):
         self.initialize()
 
@@ -111,7 +142,9 @@ class PlayerThread(Thread):
 
         self.master_.global_object.event_players_ready.wait()
 
-        ok_send = self.send_data("custom: start")
+        # ok_send = self.send_data("custom: start")
+
+        self.select_role()
 
         while not self.master_.global_object.end_flag:
             pass
