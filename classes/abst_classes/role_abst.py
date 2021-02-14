@@ -6,7 +6,6 @@ class Role_AbstClass(metaclass=ABCMeta):
         self._player_name = name
         self.log = "----------log----------\n"
 
-
     @property
     def player_name(self):
         return self._player_name
@@ -27,11 +26,11 @@ class Role_AbstClass(metaclass=ABCMeta):
 
 
     @abstractmethod
-    def actions(self, time_of_day: TIME_OF_DAY):
+    def take_action(self, time_of_day: TIME_OF_DAY):
         pass
 
-    @abstractproperty
-    def knowledges(self, time_of_day: TIME_OF_DAY):
+    @abstractmethod
+    def get_knowledge(self, time_of_day: TIME_OF_DAY):
         pass
 
 

@@ -6,5 +6,5 @@ usage:
     player = villager.player_instance(name)
 """
 
-def player_instance(name):
-    return Villager_Role(name)
+def player_instance(name, player_, master_):
+    return Villager_Role(name, player_, master_)

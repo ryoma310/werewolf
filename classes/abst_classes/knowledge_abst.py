@@ -1,9 +1,8 @@
 from abc import ABCMeta, abstractmethod, abstractproperty
-from classes.util import TIME_OF_DAY
 
 
 class Knowledge_AbstClass(metaclass=ABCMeta):
     @abstractmethod
-    def knowledge(self):
+    def knowledge(self, player_, master_):
         # masterのdbをみて回答
         pass

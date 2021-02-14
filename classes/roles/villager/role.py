@@ -19,11 +19,13 @@ functions: (といいつつannotationでpropertyなものも)
 """
 
 class Villager_Role(Role_AbstClass):
-    def __init__(self, name):
+    def __init__(self, name, player_, master_):
         super().__init__(name)
         self.__role_name = "villager"
-        self.__actions = Action()
-        self.__knowledges = Knowledge()
+        self.player_ = player_
+        self.master_ = master_
+        self.__actions = Action(self.player_, self.master_)
+        self.__knowledges = Knowledge(self.player_, self.master_)
 
 
     # 役職名: abstractproperty implementation
@@ -50,11 +52,9 @@ class Villager_Role(Role_AbstClass):
             message: property
             select: method
     """
-    def actions(self, time_of_day: TIME_OF_DAY):
+    def take_action(self, time_of_day: TIME_OF_DAY):
         # action は messageとselectを実装
-        action: Action_AbstClass = self.__actions.get_action(time_of_day)
-        
-        ## TODO messageを表示したり、selectを受け取って送信したり..
+        self.__actions.action_dict[time_of_day].action()
 
 
     # 各役割の知識用: abstractproperty implementation
@@ -65,6 +65,5 @@ class Villager_Role(Role_AbstClass):
         player.knowledges(TIME_OF_DAY.DAYTIME)
         player.knowledges(TIME_OF_DAY.MIDNIGHT)
     """
-    @property
-    def knowledges(self, time_of_day: TIME_OF_DAY) -> str:
-        return self.__knowledges.get_knowledge(time_of_day)
+    def get_knowledge(self, time_of_day: TIME_OF_DAY):
+        self.__knowledges.knowledge_dict[time_of_day].knowledge()

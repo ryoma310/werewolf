@@ -1,10 +1,8 @@
 from abc import ABCMeta, abstractmethod, abstractproperty
+# from game.player import PlayerThread
+# from game.master import MasterThread
 
-class Action_AbstClass(metaclass=ABCMeta):    
+class Action_AbstClass(metaclass=ABCMeta):
     @abstractproperty
-    def message(self):
-        pass
-    
-    @abstractmethod
-    def select(self):
+    def action(self, player_, master_):
         pass
