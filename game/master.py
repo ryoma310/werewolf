@@ -93,11 +93,46 @@ class MasterThread(Thread):
 
         self.select_role()
 
+        # 0日目の処理
+        # 
+        # 
+
+        # ゲーム終了までループ
+        game_loop_flag = True
+        while game_loop_flag:
+            self.global_object.day += 1
+            # day日目が始まりました.
+            self.broadcast_data(f"\n---------- {self.global_object.day}日目が始まりました ----------\n")
+
+            ## ゲーム終了判定 ->  game_loop_flag=False
+            if True:
+                game_loop_flag = False
 
 
-        for i in range(10):
-            self.broadcast_data(str(i+1))
-            time.sleep(1)
+            ## 朝 (スレッドに指令を出す)
+            # 知識を与える
+
+            # 行動
+
+
+            ## 昼 (スレッドに指令を出す)
+            # 知識を与える
+
+            # 行動
+
+
+            ## 夜 (スレッドに指令を出す)
+            # 知識を与える
+
+            # 行動
+
+
+
+        # for i in range(10):
+        #     self.broadcast_data(str(i+1))
+        #     time.sleep(1)
+
+        # 誰が勝ったか? <- 終了判定の部分でやってもいいかも
 
         self.broadcast_data("---------- game end! ----------\n")
         self.end_game()
