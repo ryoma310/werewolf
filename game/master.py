@@ -165,7 +165,7 @@ class MasterThread(Thread):
         elif len(wolfs_) == len(not_wolfs_): # 市民と人狼が同数
             self.global_object.finish_condition = WIN_CONDITION.WOLF_EQ_OR_MORE_THAN_CITIZEN
             return True
-        return False, None
+        return False
 
     
     def finish_statement(self):
@@ -176,6 +176,21 @@ class MasterThread(Thread):
         elif self.global_object.finish_condition == WIN_CONDITION.WOLF_EQ_OR_MORE_THAN_CITIZEN:
             self.broadcast_data("この村の市民と人狼が同数となりました")
             self.broadcast_data("よって、人狼陣営の勝利です！")
+
+    
+    def show_roles(self):
+        players_ = self.global_object.players
+        players_role_dict = {p.player_name:p.role.role_name for p in players_} 
+        p_r_dict_sorted = sorted(players_role_dict.items(), key=lambda x:x[1])
+        p_r_dict_sorted_str = "\n".join([f"{p_role}: {p_name}" for p_name, p_role in p_r_dict_sorted])
+        self.broadcast_data("役職は以下の通りでした." + p_r_dict_sorted_str)
+
+    
+    def calc_discuss_time(self) -> (str, int):
+        # returns ("xx分", その秒数)
+        day_ = self.global_object.day
+        
+        return "5秒", 5
 
 
     def run(self):
@@ -212,16 +227,15 @@ class MasterThread(Thread):
                 # day日目が始まりました.
                 self.broadcast_data(f"\n########## {self.global_object.day}日目が始まりました ##########\n")
 
-                ## ゲーム終了判定 ->  game_loop_flag=False
-                if self.check_game_finish():
-                    game_loop_flag = False
-                    break
-
 
                 ## 朝 (スレッドに指令を出す)
                 self.broadcast_data(f"\n------ {self.global_object.day}日目 朝 ------\n")
                 if self.global_object.day >= 2:
                     self.anounce_attack_result() #襲撃の結果報告 (2日目以降のみ)
+                if self.check_game_finish(): ## ゲーム終了判定
+                    game_loop_flag = False
+                    self.finish_statement()
+                    break
                 self.anounce_suspect_result() #疑うの結果報告
                 self.global_object.event_wait_next.set()
                 self.global_object.event_wait_next.clear()
@@ -232,18 +246,23 @@ class MasterThread(Thread):
                 ## 昼: 投票
                 self.broadcast_data(f"\n------ {self.global_object.day}日目 昼 ------\n")
                 # 議論の時間
-                # master: 「議論時間は, xxx分です」
-                # master: 「それでは議論を開始してください」
+                discuss_time_str, discuss_time_int = self.calc_discuss_time()
+                self.broadcast_data(f"議論時間は {discuss_time_str} です.")
+                self.broadcast_data(f"それでは議論を開始してください")
+                time.sleep(discuss_time_int) # TODO: ここはいい感じにする. 残り時間通知とか..
 
-                # master: 議論終了です
+                self.broadcast_data(f"\n議論終了です.")
 
                 self.vote_broadcast() # アナウンス
                 self.global_object.event_wait_next.set() # 投票を実施させる
                 self.global_object.event_wait_next.clear()
                 self.wait_answer_start() # playerスレッドの投票終了を待つ
-                self.anounce_vote_result()
+                self.anounce_vote_result() # 投票結果のアナウンス
+                if self.check_game_finish(): ## ゲーム終了判定
+                    game_loop_flag = False
+                    self.finish_statement()
+                    break
                 
-
 
                 ## 夜 (スレッドに指令を出す)
                 # self.broadcast_data(f"\n------ {self.global_object.day}日目 夜 ------\n")
@@ -256,14 +275,7 @@ class MasterThread(Thread):
                 self.wait_answer_start()
 
 
-
-        # for i in range(10):
-        #     self.broadcast_data(str(i+1))
-        #     time.sleep(1)
-
-        # 誰が勝ったか? <- 終了判定の部分でやってもいいかも
-
-        self.finish_statement()
+        self.show_roles()
 
         self.broadcast_data("---------- game end! ----------\n")
         self.end_game()
