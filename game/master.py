@@ -3,6 +3,7 @@ import time
 import threading
 import statistics
 import random
+from collections import defaultdict
 
 from .player import PlayerThread
 import classes.roles
@@ -28,7 +29,7 @@ class GlobalObject:
         self.players_alive: list[PlayerThread] = []
         self.vote_list: [str] = []
         self.suspect_list: [str] = []
-        self.attack_list: [str] = []
+        self.attack_target: defaultdict = defaultdict(int)
         self.finish_condition: WIN_CONDITION = None
 
 
@@ -84,13 +85,14 @@ class MasterThread(Thread):
         else:
             self.global_object.event_wait_answer.set()
 
-    def submit_answer(self, submit_type, user):
+    def submit_answer(self, submit_type, user, **kwargs):
         if submit_type == "vote":
             self.global_object.vote_list.append(user)
         elif submit_type == "suspect":
             self.global_object.suspect_list.append(user)
         elif submit_type == "attack":
-            self.global_object.attack_list.append(user)
+            priority = kwargs.get('priority', 1)
+            self.global_object.attack_target[user] += priority
         
 
     def select_role(self):
@@ -149,11 +151,12 @@ class MasterThread(Thread):
 
 
     def anounce_attack_result(self):
-        top_user = statistics.multimode(self.global_object.attack_list) # modeのlistを返す
+        max_val = max(self.global_object.attack_target.values()) # 最大値をとる
+        top_user = [k for k, v in self.global_object.attack_target.items() if v == max_val] # 最大値な人を全部取ってくる
         attacked_user = random.choice(top_user) # 重複があるとランダムに1人
         self.broadcast_data(f"昨晩の犠牲者は {attacked_user} でした.")
         self.delete_player(attacked_user) # player_aliveから消す
-        self.global_object.attack_list = []
+        self.global_object.attack_target = defaultdict(int) # 初期化
 
     
     def check_game_finish(self):
@@ -171,11 +174,11 @@ class MasterThread(Thread):
     def finish_statement(self):
         if self.global_object.finish_condition == WIN_CONDITION.NO_WOLFS:
             self.broadcast_data("この村から全ての人狼が追放されました")
-            self.broadcast_data("よって、市民陣営の勝利です！")
+            self.broadcast_data("よって、市民陣営の勝利です！\n")
 
         elif self.global_object.finish_condition == WIN_CONDITION.WOLF_EQ_OR_MORE_THAN_CITIZEN:
             self.broadcast_data("この村の市民と人狼が同数となりました")
-            self.broadcast_data("よって、人狼陣営の勝利です！")
+            self.broadcast_data("よって、人狼陣営の勝利です！\n")
 
     
     def show_roles(self):
@@ -183,7 +186,7 @@ class MasterThread(Thread):
         players_role_dict = {p.player_name:p.role.role_name for p in players_} 
         p_r_dict_sorted = sorted(players_role_dict.items(), key=lambda x:x[1])
         p_r_dict_sorted_str = "\n".join([f"{p_role}: {p_name}" for p_name, p_role in p_r_dict_sorted])
-        self.broadcast_data("役職は以下の通りでした." + p_r_dict_sorted_str)
+        self.broadcast_data("役職は以下の通りでした.\n" + p_r_dict_sorted_str)
 
     
     def calc_discuss_time(self) -> (str, int):
@@ -268,7 +271,7 @@ class MasterThread(Thread):
                 # self.broadcast_data(f"\n------ {self.global_object.day}日目 夜 ------\n")
                 self.broadcast_data(f"\n---------- 恐ろしい夜がやってきました ----------\n")
                 self.global_object.suspect_list = [] # 市民疑う用配列の初期化
-                self.global_object.attack_list = [] # 人狼襲撃用配列の初期化
+                self.global_object.attack_target = defaultdict(int) # 人狼襲撃用配列の初期化
                 self.global_object.event_wait_next.set()
                 self.global_object.event_wait_next.clear()
 
