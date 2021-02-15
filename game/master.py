@@ -78,8 +78,8 @@ class MasterThread(Thread):
         with self.global_object.wait_answer_lock:
             self.global_object.wait_answer_count += 1
 
+        print(self.print_header, f"answer: {self.global_object.wait_answer_count}/{len(self.global_object.players_alive)}")
         if self.global_object.wait_answer_count < len(self.global_object.players_alive):
-            print(self.print_header, f"answer: {self.global_object.wait_answer_count}/{len(self.global_object.players_alive)}")
             pass
         else:
             self.global_object.event_wait_answer.set()
