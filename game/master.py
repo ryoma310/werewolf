@@ -6,6 +6,7 @@ import random
 
 from .player import PlayerThread
 import classes.roles
+from classes.util import WIN_CONDITION
 
 
 class GlobalObject:
@@ -27,6 +28,8 @@ class GlobalObject:
         self.players_alive: list[PlayerThread] = []
         self.vote_list: [str] = []
         self.suspect_list: [str] = []
+        self.attack_list: [str] = []
+        self.finish_condition: WIN_CONDITION = None
 
 
 class MasterThread(Thread):
@@ -86,6 +89,8 @@ class MasterThread(Thread):
             self.global_object.vote_list.append(user)
         elif submit_type == "suspect":
             self.global_object.suspect_list.append(user)
+        elif submit_type == "attack":
+            self.global_object.attack_list.append(user)
         
 
     def select_role(self):
@@ -107,6 +112,13 @@ class MasterThread(Thread):
             found.set_not_alive()
 
 
+    def validate_game_condition(self):
+        # 成立条件: wolf > 0 and villager > wolf
+        wolfs_ = [p for p in self.global_object.players_alive if type(p.role)==classes.roles.werewolf.Werewolf_Role]
+        citizens_ = [p for p in self.global_object.players_alive if type(p.role)==classes.roles.citizen.Citizen_Role]
+        return True if (len(wolfs_) > 0) and (len(citizens_) > len(wolfs_)) else False
+
+
     def alive_players_dict(self):
         alives = self.global_object.players_alive
         return {i:p.player_name for i, p in enumerate(alives)}
@@ -118,13 +130,13 @@ class MasterThread(Thread):
         p_dict = self.alive_players_dict()
         # 選択肢をbroadcast
         p_dict_str = "\n".join([ f"{k}: {v}" for k, v in p_dict.items()])
-        self.broadcast_data("vote user:\n" + p_dict_str + "\n")
+        self.broadcast_data("それでは, 投票したい人物を選んでください.\n選択肢:\n" + p_dict_str + "\n")
 
     
     def anounce_vote_result(self):
         top_user = statistics.multimode(self.global_object.vote_list) # modeのlistを返す
         execution_user = random.choice(top_user) # 重複があるとランダムに1人
-        self.broadcast_data(f"投票の結果、{execution_user} が処刑されました")
+        self.broadcast_data(f"投票の結果、{execution_user} に決定しました")
         self.delete_player(execution_user) # player_aliveから消す
         self.global_object.vote_list = []
 
@@ -132,70 +144,116 @@ class MasterThread(Thread):
     def anounce_suspect_result(self):
         top_user = statistics.multimode(self.global_object.suspect_list) # modeのlistを返す
         suspected_user = random.choice(top_user) # 重複があるとランダムに1人
-        self.broadcast_data(f"{suspected_user} が疑われています")
+        self.broadcast_data(f"最も強く疑われている人物は {suspected_user} です")
         self.global_object.suspect_list = []
 
 
+    def anounce_attack_result(self):
+        top_user = statistics.multimode(self.global_object.attack_list) # modeのlistを返す
+        attacked_user = random.choice(top_user) # 重複があるとランダムに1人
+        self.broadcast_data(f"昨晩の犠牲者は {attacked_user} でした.")
+        self.delete_player(attacked_user) # player_aliveから消す
+        self.global_object.attack_list = []
 
-                
+    
+    def check_game_finish(self):
+        wolfs_ = [p for p in self.global_object.players_alive if type(p.role)==classes.roles.werewolf.Werewolf_Role]
+        not_wolfs_ = [p for p in self.global_object.players_alive if type(p.role)!=classes.roles.werewolf.Werewolf_Role]
+        if len(wolfs_) == 0: # 全ての人狼が追放
+            self.global_object.finish_condition = WIN_CONDITION.NO_WOLFS
+            return True
+        elif len(wolfs_) == len(not_wolfs_): # 市民と人狼が同数
+            self.global_object.finish_condition = WIN_CONDITION.WOLF_EQ_OR_MORE_THAN_CITIZEN
+            return True
+        return False, None
+
+    
+    def finish_statement(self):
+        if self.global_object.finish_condition == WIN_CONDITION.NO_WOLFS:
+            self.broadcast_data("この村から全ての人狼が追放されました")
+            self.broadcast_data("よって、市民陣営の勝利です！")
+
+        elif self.global_object.finish_condition == WIN_CONDITION.WOLF_EQ_OR_MORE_THAN_CITIZEN:
+            self.broadcast_data("この村の市民と人狼が同数となりました")
+            self.broadcast_data("よって、人狼陣営の勝利です！")
+
 
     def run(self):
         # ここでゲームを展開
         self.global_object.event_players_ready.wait()
 
-        self.broadcast_data("\n---------- game start! ----------\n")
+        self.broadcast_data("\n########## game start! ##########\n")
 
         self.select_role()
 
+        self.broadcast_data("プレイヤー全員の役職選択が完了しました.")
 
-        # 0日目の処理
-        self.broadcast_data(f"\n---------- 0日目です ----------\n")
-        print(self.print_header, "0 day")
-        self.global_object.suspect_list = [] # 村人疑う用配列の初期化
-        self.global_object.event_wait_next.set()
-        self.global_object.event_wait_next.clear()
-
-        self.wait_answer_start()
- 
-
-        # ゲーム終了までループ
-        game_loop_flag = True
-        while game_loop_flag:
-            self.global_object.day += 1
-            # day日目が始まりました.
-            self.broadcast_data(f"\n---------- {self.global_object.day}日目が始まりました ----------\n")
-
-            ## ゲーム終了判定 ->  game_loop_flag=False
-            # if True:
-            #     game_loop_flag = False
+        if not self.validate_game_condition():
+            self.broadcast_data("役職選択の結果、このゲームは成立しませんでした.")
+        else:
+            ############## 以降ゲームが成立する場合、実施
+            self.broadcast_data("役職選択の結果、このゲームは成立します.")
 
 
-            ## 朝 (スレッドに指令を出す)
-            self.broadcast_data(f"\n------ {self.global_object.day}日目 朝 ------\n")
-            self.anounce_suspect_result() #疑うの結果報告
-            self.global_object.event_wait_next.set()
-            self.global_object.event_wait_next.clear()
- 
-            self.wait_answer_start()
-
-
-            ## 昼: 投票
-            self.broadcast_data(f"\n------ {self.global_object.day}日目 昼 ------\n")
-            self.vote_broadcast() # アナウンス
-            self.global_object.event_wait_next.set() # 投票を実施させる
-            self.global_object.event_wait_next.clear()
-            self.wait_answer_start() # playerスレッドの投票終了を待つ
-            self.anounce_vote_result()
-            
-
-
-            ## 夜 (スレッドに指令を出す)
-            self.broadcast_data(f"\n------ {self.global_object.day}日目 夜 ------\n")
+            # 0日目の処理
+            self.broadcast_data(f"\n---------- 恐ろしい夜がやってきました ----------\n")
+            print(self.print_header, "0 day")
             self.global_object.suspect_list = [] # 村人疑う用配列の初期化
             self.global_object.event_wait_next.set()
             self.global_object.event_wait_next.clear()
 
             self.wait_answer_start()
+    
+
+            # ゲーム終了までループ
+            game_loop_flag = True
+            while game_loop_flag:
+                self.global_object.day += 1
+                # day日目が始まりました.
+                self.broadcast_data(f"\n########## {self.global_object.day}日目が始まりました ##########\n")
+
+                ## ゲーム終了判定 ->  game_loop_flag=False
+                if self.check_game_finish():
+                    game_loop_flag = False
+                    break
+
+
+                ## 朝 (スレッドに指令を出す)
+                self.broadcast_data(f"\n------ {self.global_object.day}日目 朝 ------\n")
+                if self.global_object.day >= 2:
+                    self.anounce_attack_result() #襲撃の結果報告 (2日目以降のみ)
+                self.anounce_suspect_result() #疑うの結果報告
+                self.global_object.event_wait_next.set()
+                self.global_object.event_wait_next.clear()
+    
+                self.wait_answer_start()
+
+
+                ## 昼: 投票
+                self.broadcast_data(f"\n------ {self.global_object.day}日目 昼 ------\n")
+                # 議論の時間
+                # master: 「議論時間は, xxx分です」
+                # master: 「それでは議論を開始してください」
+
+                # master: 議論終了です
+
+                self.vote_broadcast() # アナウンス
+                self.global_object.event_wait_next.set() # 投票を実施させる
+                self.global_object.event_wait_next.clear()
+                self.wait_answer_start() # playerスレッドの投票終了を待つ
+                self.anounce_vote_result()
+                
+
+
+                ## 夜 (スレッドに指令を出す)
+                # self.broadcast_data(f"\n------ {self.global_object.day}日目 夜 ------\n")
+                self.broadcast_data(f"\n---------- 恐ろしい夜がやってきました ----------\n")
+                self.global_object.suspect_list = [] # 市民疑う用配列の初期化
+                self.global_object.attack_list = [] # 人狼襲撃用配列の初期化
+                self.global_object.event_wait_next.set()
+                self.global_object.event_wait_next.clear()
+
+                self.wait_answer_start()
 
 
 
@@ -204,6 +262,8 @@ class MasterThread(Thread):
         #     time.sleep(1)
 
         # 誰が勝ったか? <- 終了判定の部分でやってもいいかも
+
+        self.finish_statement()
 
         self.broadcast_data("---------- game end! ----------\n")
         self.end_game()

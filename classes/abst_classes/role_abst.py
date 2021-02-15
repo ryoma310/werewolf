@@ -15,19 +15,16 @@ class Role_AbstClass(metaclass=ABCMeta):
     def role_name(self):
         pass
 
+
     @abstractproperty
     def win_condition(self) -> WIN_CONDITION:
-        pass
-
-
-    @abstractproperty
-    def zero_day(self):
         pass
 
 
     @abstractmethod
     def take_action(self, time_of_day: TIME_OF_DAY):
         pass
+
 
     @abstractmethod
     def get_knowledge(self, time_of_day: TIME_OF_DAY):

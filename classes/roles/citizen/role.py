@@ -18,10 +18,10 @@ functions: (といいつつannotationでpropertyなものも)
     knowledges(TIME_OF_DAY) -> str:     朝,昼,晩に得られる知識
 """
 
-class Villager_Role(Role_AbstClass):
+class Citizen_Role(Role_AbstClass):
     def __init__(self, name, player_, master_):
         super().__init__(name)
-        self.__role_name = "villager"
+        self.__role_name = "citizen"
         self.player_ = player_
         self.master_ = master_
         self.__actions = Action(self.player_, self.master_)
@@ -37,33 +37,15 @@ class Villager_Role(Role_AbstClass):
     # 勝利条件: abstractproperty implementation
     @property
     def win_condition(self) -> WIN_CONDITION:
-        return WIN_CONDITION.VILLAGER_MORE_THAN_WOLF
-
-
-    # 0日目の行動: abstractproperty implementation
-    @property
-    def zero_day(self):
-        pass
+        return WIN_CONDITION.NO_WOLFS
 
 
     # 各役割の行動: abstractproperty implementation
-    """
-        Action_AbstClass:
-            message: property
-            select: method
-    """
     def take_action(self, time_of_day: TIME_OF_DAY):
         # action は messageとselectを実装
         self.__actions.action_dict[time_of_day].action()
 
 
     # 各役割の知識用: abstractproperty implementation
-    """
-    usage: 
-        player = Villager_Role(name)
-        player.knowledges(TIME_OF_DAY.MORNING)
-        player.knowledges(TIME_OF_DAY.DAYTIME)
-        player.knowledges(TIME_OF_DAY.MIDNIGHT)
-    """
     def get_knowledge(self, time_of_day: TIME_OF_DAY):
         self.__knowledges.knowledge_dict[time_of_day].knowledge()

@@ -7,4 +7,4 @@ usage:
 """
 
 def player_instance(name, player_, master_):
-    return Villager_Role(name, player_, master_)
+    return Citizen_Role(name, player_, master_)
