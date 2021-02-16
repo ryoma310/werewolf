@@ -1,6 +1,6 @@
 from classes.abst_classes.role_abst import Role_AbstClass
 from classes.abst_classes.action_abst import Action_AbstClass
-from classes.util import WIN_CONDITION, TIME_OF_DAY
+from classes.util import WIN_CONDITION, TIME_OF_DAY, ROLES
 
 from .knowledge import Knowledge
 from .action import Action
@@ -21,25 +21,31 @@ functions: (といいつつannotationでpropertyなものも)
 class Citizen_Role(Role_AbstClass):
     def __init__(self, name, player_, master_):
         super().__init__(name)
-        self.__role_name = "citizen"
         self.player_ = player_
         self.master_ = master_
         self.__actions = Action(self.player_, self.master_)
         self.__knowledges = Knowledge(self.player_, self.master_)
 
+    # 親クラスで、
+    # player_name -> プレーヤー名を返す
+    # role_name -> role_enum.valueを返す
+    # を実装
 
-    # 役職名: abstractproperty implementation
+
+    # 役職定数: abstractproperty implementation
     @property
-    def role_name(self) -> str:
-        return self.__role_name
+    def role_enum(self):
+        return ROLES.CITIZEN # ここを変更
 
 
     # 勝利条件: abstractproperty implementation
     @property
     def win_condition(self) -> WIN_CONDITION:
-        return WIN_CONDITION.NO_WOLFS
+        return WIN_CONDITION.NO_WOLFS # ここを変更
 
 
+
+    ###################### ここから下は共通 #############################
     # 各役割の行動: abstractproperty implementation
     def take_action(self, time_of_day: TIME_OF_DAY):
         # action は messageとselectを実装

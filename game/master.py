@@ -7,13 +7,13 @@ from collections import defaultdict
 
 from .player import PlayerThread
 import classes.roles
-from classes.util import WIN_CONDITION
+from classes.util import WIN_CONDITION, ROLES
 
 
 class GlobalObject:
     def __init__(self, master):
         self.master: MasterThread = master
-        self.players: list[PlayerThread] = []
+        self.players:  Dict[str, PlayerThread] = {}
         self.day: int = 0
         self.started: bool = False
         self.player_num: int = None
@@ -31,6 +31,7 @@ class GlobalObject:
         self.suspect_list: [str] = []
         self.attack_target: defaultdict = defaultdict(int)
         self.finish_condition: WIN_CONDITION = None
+        self.check_username_lock = threading.RLock()
 
 
 class MasterThread(Thread):
@@ -40,23 +41,30 @@ class MasterThread(Thread):
         self.print_header = "[*] master.py:"
 
     def broadcast_data(self, data:str, log=True):
-        for p in self.global_object.players:
+        for p in self.global_object.players.values():
             if p.listen_broadcast:
                 p.send_data(data)
                 p.log += data + "\n"
 
 
-    def new_player(self, player_:PlayerThread):
-        self.global_object.players.append(player_)
-        self.global_object.players_alive.append(player_)
-        name_ = player_.player_name
-        ready_num = len(self.global_object.players)
+    def new_player(self, name:str, player_:PlayerThread):
+        with self.global_object.check_username_lock:
+            if name in self.global_object.players.keys():
+                return False
+            else:
+                player_.player_name = name
+                self.global_object.players[name] = player_
+                self.global_object.players_alive.append(player_)
+                name_ = player_.player_name
+                ready_num = len(self.global_object.players)
 
-        if ready_num < self.global_object.player_num:
-            self.broadcast_data(f"{name_} joined! Now {ready_num}/{self.global_object.player_num} players ready, please wait all players ready...\n")
-        else:
-            self.broadcast_data(f"{name_} joined! Now all players ready!")
-            self.start_game()
+                if ready_num < self.global_object.player_num:
+                    self.broadcast_data(f"{name_} joined! Now {ready_num}/{self.global_object.player_num} players ready, please wait all players ready...\n")
+                else:
+                    self.broadcast_data(f"{name_} joined! Now all players ready!\n")
+                    self.start_game()
+                return True
+
 
     def start_game(self):
         self.started = True
@@ -65,7 +73,7 @@ class MasterThread(Thread):
     def end_game(self):
         self.started = False
         self.global_object.end_flag = True
-        for p in self.global_object.players:
+        for p in self.global_object.players.values():
             p.end_flag = True
 
 
@@ -96,15 +104,13 @@ class MasterThread(Thread):
         
 
     def select_role(self):
-        self.broadcast_data("select role:\n")
+        self.broadcast_data("役職一覧:\n")
 
         roles_dict_str = "\n".join([ f"{k}: {v}" for k, v in self.global_object.roles_dict.items()])
         self.broadcast_data(roles_dict_str + "\n")
         self.global_object.event_players_role_select.set() # playerスレッドにroleの選択を開始させる
 
         self.wait_answer_start() # playerスレッドの処理終了を待つ
-
-        self.broadcast_data("ok")
 
     
     def delete_player(self, user_name):
@@ -116,8 +122,8 @@ class MasterThread(Thread):
 
     def validate_game_condition(self):
         # 成立条件: wolf > 0 and villager > wolf
-        wolfs_ = [p for p in self.global_object.players_alive if type(p.role)==classes.roles.werewolf.Werewolf_Role]
-        citizens_ = [p for p in self.global_object.players_alive if type(p.role)==classes.roles.citizen.Citizen_Role]
+        wolfs_ = [p for p in self.global_object.players_alive if p.role.role_enum is ROLES.WEREWOLF] # TODO: 変更
+        citizens_ = [p for p in self.global_object.players_alive if p.role.role_enum is ROLES.CITIZEN] # TODO: 変更
         return True if (len(wolfs_) > 0) and (len(citizens_) > len(wolfs_)) else False
 
 
@@ -154,18 +160,20 @@ class MasterThread(Thread):
         max_val = max(self.global_object.attack_target.values()) # 最大値をとる
         top_user = [k for k, v in self.global_object.attack_target.items() if v == max_val] # 最大値な人を全部取ってくる
         attacked_user = random.choice(top_user) # 重複があるとランダムに1人
+        # ここで、騎士の守りをチェック
+
         self.broadcast_data(f"昨晩の犠牲者は {attacked_user} でした.")
         self.delete_player(attacked_user) # player_aliveから消す
         self.global_object.attack_target = defaultdict(int) # 初期化
 
     
     def check_game_finish(self):
-        wolfs_ = [p for p in self.global_object.players_alive if type(p.role)==classes.roles.werewolf.Werewolf_Role]
-        not_wolfs_ = [p for p in self.global_object.players_alive if type(p.role)!=classes.roles.werewolf.Werewolf_Role]
+        wolfs_ = [p for p in self.global_object.players_alive if p.role.role_enum in ROLES.WEREWOLF_SIDE] # TODO: 後で変更
+        not_wolfs_ = [p for p in self.global_object.players_alive if p.role.role_enum not in ROLES.WEREWOLF_SIDE] # TODO: 後で変更
         if len(wolfs_) == 0: # 全ての人狼が追放
             self.global_object.finish_condition = WIN_CONDITION.NO_WOLFS
             return True
-        elif len(wolfs_) == len(not_wolfs_): # 市民と人狼が同数
+        elif len(wolfs_) >= len(not_wolfs_): # 市民が人狼以下
             self.global_object.finish_condition = WIN_CONDITION.WOLF_EQ_OR_MORE_THAN_CITIZEN
             return True
         return False
@@ -183,7 +191,7 @@ class MasterThread(Thread):
     
     def show_roles(self):
         players_ = self.global_object.players
-        players_role_dict = {p.player_name:p.role.role_name for p in players_} 
+        players_role_dict = {name:p.role.role_name for name, p in players_.items()} 
         p_r_dict_sorted = sorted(players_role_dict.items(), key=lambda x:x[1])
         p_r_dict_sorted_str = "\n".join([f"{p_role}: {p_name}" for p_name, p_role in p_r_dict_sorted])
         self.broadcast_data("役職は以下の通りでした.\n" + p_r_dict_sorted_str)
@@ -207,6 +215,7 @@ class MasterThread(Thread):
         self.broadcast_data("プレイヤー全員の役職選択が完了しました.")
 
         if not self.validate_game_condition():
+            self.end_game()
             self.broadcast_data("役職選択の結果、このゲームは成立しませんでした.")
         else:
             ############## 以降ゲームが成立する場合、実施
@@ -233,8 +242,7 @@ class MasterThread(Thread):
 
                 ## 朝 (スレッドに指令を出す)
                 self.broadcast_data(f"\n------ {self.global_object.day}日目 朝 ------\n")
-                if self.global_object.day >= 2:
-                    self.anounce_attack_result() #襲撃の結果報告 (2日目以降のみ)
+                self.anounce_attack_result()
                 if self.check_game_finish(): ## ゲーム終了判定
                     game_loop_flag = False
                     self.finish_statement()
@@ -282,5 +290,6 @@ class MasterThread(Thread):
 
         self.broadcast_data("---------- game end! ----------\n")
         self.end_game()
+        self.global_object.event_wait_next.set()
 
 

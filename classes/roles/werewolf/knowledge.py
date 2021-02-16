@@ -2,7 +2,7 @@
 # sys.path.append("../../..")
 
 from classes.abst_classes.knowledge_abst import Knowledge_AbstClass
-from classes.util import TIME_OF_DAY
+from classes.util import TIME_OF_DAY, ROLES
 
 ######################################################################
 # ここから下をいじる
@@ -13,7 +13,7 @@ class _ZERO(Knowledge_AbstClass):
 
     def knowledge(self):
         # 仲間の人狼
-        werewolfs = [p.player_name for p in self.master_.global_object.players if type(p.role)==type(self.player_.role)] # 循環importのため無理矢理 type(self.player_.role)はwolfのはず
+        werewolfs = [p.player_name for p in self.master_.global_object.players.values() if p.role.role_enum is ROLES.WEREWOLF]
         self.player_.send_data(f"knowledge: このゲームにおける人狼は {', '.join(werewolfs)} の{len(werewolfs)}人です.\n")
 
 
