@@ -32,6 +32,7 @@ class GlobalObject:
         self.attack_target: defaultdict = defaultdict(int)
         self.finish_condition: WIN_CONDITION = None
         self.check_username_lock = threading.RLock()
+        self.voted_user = None
 
 
 class MasterThread(Thread):
@@ -134,6 +135,7 @@ class MasterThread(Thread):
 
     def vote_broadcast(self):
         self.global_object.vote_list = [] # 一応初期化
+        self.global_object.voted_user = None
         # 疑う対象の一覧を取得
         p_dict = self.alive_players_dict()
         # 選択肢をbroadcast
@@ -146,6 +148,7 @@ class MasterThread(Thread):
         execution_user = random.choice(top_user) # 重複があるとランダムに1人
         self.broadcast_data(f"投票の結果、{execution_user} に決定しました")
         self.delete_player(execution_user) # player_aliveから消す
+        self.global_object.voted_user = execution_user
         self.global_object.vote_list = []
 
     
