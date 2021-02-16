@@ -10,6 +10,8 @@ select: method
     actionに対する選択などのやりとりを想定
 """
 # ここから下をいじる
+
+
 class _ZERO(Action_AbstClass):
     def __init__(self, player_, master_):
         self.player_ = player_
@@ -19,7 +21,7 @@ class _ZERO(Action_AbstClass):
         # 疑う対象の一覧を取得
         p_dict = self.master_.alive_players_dict()
         # 選択肢をbroadcast
-        p_dict_str = "\n".join([ f"{k}: {v}" for k, v in p_dict.items()])
+        p_dict_str = "\n".join([f"{k}: {v}" for k, v in p_dict.items()])
         self.player_.send_data("suspect user:\n" + p_dict_str + "\n")
 
         # 疑う
@@ -34,12 +36,14 @@ class _ZERO(Action_AbstClass):
                 sys.exit(0)
             if data.isdigit() and (int(data) in p_dict.keys()):
                 suspected_player = p_dict[int(data)]
-                self.master_.submit_answer(submit_type="suspect", user=suspected_player) # 選択を登録
-                ok_send = self.player_.send_data(f"suspect {p_dict[int(data)]}\n")
+                self.master_.submit_answer(
+                    submit_type="suspect", user=suspected_player)  # 選択を登録
+                ok_send = self.player_.send_data(
+                    f"suspect {p_dict[int(data)]}\n")
                 return
             else:
-                ok_send = self.player_.send_data("please enter player number\nsuspect > ", with_CR=False)
-
+                ok_send = self.player_.send_data(
+                    "please enter player number\nsuspect > ", with_CR=False)
 
 
 class _MORNING(Action_AbstClass):
@@ -68,9 +72,11 @@ class _MIDNIGHT(Action_AbstClass):
 
     def action(self):
         # 襲撃対象の一覧を取得
-        p_dict = [p.player_name for p in self.master_.global_object.players_alive if type(p.role)!=type(self.player_.role)] # 循環importのため無理矢理 type(self.player_.role)はwolfのはず
+        p_array = [p.player_name for p in self.master_.global_object.players_alive if type(
+            p.role) != type(self.player_.role)]  # 循環importのため無理矢理 type(self.player_.role)はwolfのはず
+        p_dict = {i: p for i, p in enumerate(p_array)}
         # 選択肢を送信
-        p_dict_str = "\n".join([ f"{k}: {v}" for k, v in p_dict.items()])
+        p_dict_str = "\n".join([f"{k}: {v}" for k, v in p_dict.items()])
         self.player_.send_data("attack user:\n" + p_dict_str + "\n")
 
         # 問い合わせ
@@ -83,12 +89,14 @@ class _MIDNIGHT(Action_AbstClass):
                 sys.exit(0)
             if data.isdigit() and (int(data) in p_dict.keys()):
                 attack_player = p_dict[int(data)]
-                self.master_.submit_answer(submit_type="attack", user=attack_player) # 選択を登録
-                ok_send = self.player_.send_data(f"attack {p_dict[int(data)]}\n")
+                self.master_.submit_answer(
+                    submit_type="attack", user=attack_player)  # 選択を登録
+                ok_send = self.player_.send_data(
+                    f"attack {p_dict[int(data)]}\n")
                 return
             else:
-                ok_send = self.player_.send_data("please enter player number\nattack > ", with_CR=False)
-
+                ok_send = self.player_.send_data(
+                    "please enter player number\nattack > ", with_CR=False)
 
 
 # ここまで
