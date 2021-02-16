@@ -30,6 +30,7 @@ class GlobalObject:
         self.players_alive: list[PlayerThread] = []
         self.vote_list: [str] = []
         self.suspect_list: [str] = []
+        self.guard_list: [str] = []
         self.attack_target: defaultdict = defaultdict(int)
         self.finish_condition: WIN_CONDITION = None
         self.check_username_lock = threading.RLock()
@@ -102,6 +103,8 @@ class MasterThread(Thread):
         elif submit_type == "attack":
             priority = kwargs.get('priority', 1)
             self.global_object.attack_target[user] += priority
+        elif submit_type == "guard":
+            self.global_object.guard_list.append(user)
 
     def select_role(self):
         self.broadcast_data("役職一覧:\n")
@@ -126,7 +129,7 @@ class MasterThread(Thread):
         wolfs_ = [
             p for p in self.global_object.players_alive if p.role.role_enum is ROLES.WEREWOLF]
         citizens_ = [
-            p for p in self.global_object.players_alive if p.role.role_enum is ROLES.CITIZEN]  # TODO: 変更
+            p for p in self.global_object.players_alive if p.role.role_enum is not ROLES.WEREWOLF]  # TODO: 変更
         return True if (len(wolfs_) > 0) and (len(citizens_) > len(wolfs_)) else False
 
     def alive_players_dict(self):
@@ -165,10 +168,13 @@ class MasterThread(Thread):
         ) if v == max_val]  # 最大値な人を全部取ってくる
         attacked_user = random.choice(top_user)  # 重複があるとランダムに1人
         # ここで、騎士の守りをチェック
-
-        self.broadcast_data(f"昨晩の犠牲者は {attacked_user} でした.")
-        self.delete_player(attacked_user)  # player_aliveから消す
+        if attacked_user not in self.global_object.guard_list:
+            self.broadcast_data(f"昨晩の犠牲者は {attacked_user} でした.")
+            self.delete_player(attacked_user)  # player_aliveから消す
+        else:
+            self.broadcast_data(f"昨晩の犠牲者は いません でした.")
         self.global_object.attack_target = defaultdict(int)  # 初期化
+        self.global_object.guard_target = []
 
     def check_game_finish(self):
         # TODO: 後で変更
