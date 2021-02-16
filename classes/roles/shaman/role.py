@@ -18,7 +18,7 @@ functions: (といいつつannotationでpropertyなものも)
     knowledges(TIME_OF_DAY) -> str:     朝,昼,晩に得られる知識
 """
 
-class Werewolf_Role(Role_AbstClass):
+class Shaman_Role(Role_AbstClass):
     def __init__(self, name, player_, master_):
         super().__init__(name)
         self.player_ = player_
@@ -26,17 +26,23 @@ class Werewolf_Role(Role_AbstClass):
         self.__actions = Action(self.player_, self.master_)
         self.__knowledges = Knowledge(self.player_, self.master_)
 
+    # 親クラスで、
+    # player_name -> プレーヤー名を返す
+    # role_name -> role_enum.valueを返す
+    # を実装
+
 
     # 役職定数: abstractproperty implementation
     @property
     def role_enum(self):
-        return ROLES.WEREWOLF # ここを変更
+        return ROLES.SHAMAN # ここを変更
 
 
     # 勝利条件: abstractproperty implementation
     @property
     def win_condition(self) -> WIN_CONDITION:
-        return WIN_CONDITION.WOLF_EQ_OR_MORE_THAN_CITIZEN # ここを変更
+        return WIN_CONDITION.NO_WOLFS # ここを変更
+
 
 
     ###################### ここから下は共通 #############################

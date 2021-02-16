@@ -68,12 +68,13 @@ class _MIDNIGHT(Action_AbstClass):
 
     def action(self):
         # 襲撃対象の一覧を取得
-        p_dict = [p.player_name for p in self.master_.global_object.players_alive if type(p.role)!=type(self.player_.role)] # 循環importのため無理矢理 type(self.player_.role)はwolfのはず
+        p_list = [p.player_name for p in self.master_.global_object.players_alive] # 循環importのため無理矢理 type(self.player_.role)はwolfのはず
+        p_dict = {i:n for i, n in enumerate(p_list)}
         # 選択肢を送信
         p_dict_str = "\n".join([ f"{k}: {v}" for k, v in p_dict.items()])
         self.player_.send_data("attack user:\n" + p_dict_str + "\n")
 
-        # 問い合わせ
+        # 問い合わせ (誰を?)
         ok_send = self.player_.send_data("attack > ", with_CR=False)
         while True:
             if not ok_send:
@@ -83,11 +84,27 @@ class _MIDNIGHT(Action_AbstClass):
                 sys.exit(0)
             if data.isdigit() and (int(data) in p_dict.keys()):
                 attack_player = p_dict[int(data)]
-                self.master_.submit_answer(submit_type="attack", user=attack_player) # 選択を登録
-                ok_send = self.player_.send_data(f"attack {p_dict[int(data)]}\n")
-                return
+                # self.master_.submit_answer(submit_type="attack", user=attack_player) # 選択を登録
+                # ok_send = self.player_.send_data(f"attack {p_dict[int(data)]}\n")
+                break
             else:
                 ok_send = self.player_.send_data("please enter player number\nattack > ", with_CR=False)
+        
+        # 問い合わせ (どのくらい?)
+        ok_send = self.player_.send_data("どのくらい襲撃したいですか? (1:普通, 2:わりと, 3:絶対)\n> ", with_CR=False)
+        while True:
+            if not ok_send:
+                sys.exit(0)
+            ok_recv, data = self.player_.recv_data()
+            if not ok_recv:
+                sys.exit(0)
+            if data.isdigit() and (int(data) in [1, 2, 3]):
+                priority_ = int(data)
+                self.master_.submit_answer(submit_type="attack", user=attack_player, priority=priority_) # 選択を登録
+                ok_send = self.player_.send_data(f"submit: {attack_player}を優先度{priority_}で襲撃\n")
+                return
+            else:
+                ok_send = self.player_.send_data("1,2,3を入力してください!\n> ", with_CR=False)
 
 
 

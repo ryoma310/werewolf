@@ -102,13 +102,18 @@ class PlayerThread(Thread):
             ok_recv, data = self.recv_data()
             if not ok_recv:
                 ok_send = self.send_data("some error occured, enter again > ", with_CR=False)
-            else:
-                name_ = data
-                self.player_name = name_
-                ok_send = self.send_data(f"Thank you, {name_}! please wait for game to begin...\n")
-                break
+                continue # もう一回
 
-        self.master_.new_player(self)
+            name_ = data
+            success = self.master_.new_player(name_, self) # すでに登録されているかを確認していろいろ
+            if not success:
+                ok_send = self.send_data(f"{name_} is not available. please use another\nenter your name > ", with_CR=False)
+                continue # もう一回
+
+            ok_send = self.send_data(f"Thank you, {name_}! please wait for game to begin...\n")
+            break
+
+        
 
 
     def select_role(self):
@@ -117,7 +122,7 @@ class PlayerThread(Thread):
         self.listen_broadcast = False
         role_dict_ = self.master_.global_object.roles_dict
 
-        ok_send = self.send_data("select role > ", with_CR=False)
+        ok_send = self.send_data("役職選択 > ", with_CR=False)
         while True:
             if not ok_send:
                 sys.exit(0)
@@ -129,10 +134,10 @@ class PlayerThread(Thread):
                 self.role = role_
                 self.listen_broadcast = True
                 self.master_.wait_answer_done()
-                ok_send = self.send_data(f"OK, you are {role_.role_name}\n")
+                ok_send = self.send_data(f"受理しました, あなたは {role_.role_name} です.\n")
                 break
             else:
-                ok_send = self.send_data("please enter role number\nselect role > ", with_CR=False)
+                ok_send = self.send_data("役職の番号を入力してください.\n役職選択 > ", with_CR=False)
 
 
         # self.listen_broadcast = True 上に移動
@@ -142,7 +147,7 @@ class PlayerThread(Thread):
     def vote_user(self):
         p_dict = self.master_.alive_players_dict()
         # 問い合わせ
-        ok_send = self.send_data("vote > ", with_CR=False)
+        ok_send = self.send_data("投票 > ", with_CR=False)
         while True:
             if not ok_send:
                 sys.exit(0)
@@ -152,14 +157,14 @@ class PlayerThread(Thread):
             if data.isdigit() and (int(data) in p_dict.keys()):
                 voted_player = p_dict[int(data)]
                 self.master_.submit_answer(submit_type="vote", user=voted_player)
-                ok_send = self.send_data(f"vote to {p_dict[int(data)]}\n")
+                ok_send = self.send_data(f"{p_dict[int(data)]} に投票しました.\n")
                 return
             else:
-                ok_send = self.send_data("please enter player number\nvote > ", with_CR=False)
+                ok_send = self.send_data("プレーヤーの番号を入力してください.\n投票 > ", with_CR=False)
 
     def set_not_alive(self):
         self.alive = False
-        self.send_data("死んでしましました.\nもう生きてはいませんが、引き続き様子を伺いましょう")
+        self.send_data("死んでしましました.\nもう生きてはいませんが、引き続き様子を見守りましょう")
         # ここで、役職公開とかもあり.
 
 
@@ -184,10 +189,12 @@ class PlayerThread(Thread):
         self.master_.global_object.event_wait_next.wait()
         ########################
 
-        # 0日目の処理
+        # 0日目の処理 -> 初夜も夜中の知識/行動をする
         self.send_data("player: 0 day")
         self.role.get_knowledge(TIME_OF_DAY.ZERO)
         self.role.take_action(TIME_OF_DAY.ZERO)
+        self.role.get_knowledge(TIME_OF_DAY.MIDNIGHT)
+        self.role.take_action(TIME_OF_DAY.MIDNIGHT)
         self.master_.wait_answer_done() # 終了通知
         
         self.master_.global_object.event_wait_next.wait() # 次の段階待ち
@@ -205,6 +212,8 @@ class PlayerThread(Thread):
             ########################
 
             ## 昼
+            if self.end_flag:
+                break
             self.send_data(f"player: {self.master_.global_object.day} day daytime")
             # 知識を与える: 死んだ人 (共通) -> master.broadcast
 
@@ -218,6 +227,8 @@ class PlayerThread(Thread):
 
 
             ## 夜
+            if self.end_flag:
+                break
             self.send_data(f"player: {self.master_.global_object.day} day midnight")
             if self.alive:
                 self.role.get_knowledge(TIME_OF_DAY.MIDNIGHT)
