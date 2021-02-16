@@ -1,5 +1,5 @@
 from abc import ABCMeta, abstractmethod, abstractproperty
-from classes.util import WIN_CONDITION, TIME_OF_DAY
+from classes.util import WIN_CONDITION, TIME_OF_DAY, ROLES
 
 class Role_AbstClass(metaclass=ABCMeta):
     def __init__(self, name):
@@ -10,10 +10,15 @@ class Role_AbstClass(metaclass=ABCMeta):
     def player_name(self):
         return self._player_name
 
-
+    
     @abstractproperty
-    def role_name(self):
+    def role_enum(self) -> ROLES:
         pass
+
+
+    @property
+    def role_name(self):
+        return self.role_enum.value
 
 
     @abstractproperty
