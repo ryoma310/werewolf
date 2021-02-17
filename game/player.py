@@ -164,7 +164,7 @@ class PlayerThread(Thread):
 
     def set_not_alive(self):
         self.alive = False
-        self.send_data("死んでしましました.\nもう生きてはいませんが、引き続き様子を見守りましょう")
+        self.send_data("死んでしまいました.\nもう生きてはいませんが、引き続き様子を見守りましょう")
         # ここで、役職公開とかもあり.
 
 
