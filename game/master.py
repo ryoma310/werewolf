@@ -133,13 +133,13 @@ class MasterThread(Thread):
         if found:
             self.global_object.players_alive.remove(found)
             found.set_not_alive()
-            if found.role.role_enum == ROLES.FOX_SPIRIT: # 死ぬのが妖狐ならば、背徳者道連れ
-                immorals_ = [p for p in self.global_object.players_alive if p.role.role_enum == ROLES.IMMORAL]
+            if found.role.role_enum == ROLES.FOX_SPIRIT:  # 死ぬのが妖狐ならば、背徳者道連れ
+                immorals_ = [
+                    p for p in self.global_object.players_alive if p.role.role_enum == ROLES.IMMORAL]
                 for p in immorals_:
-                    self.delete_player(p.player_name) # 再起処理で消していく for 恋人
-            #### TODO: ここで消す作業が生じたので、death_listをglobalに持っておいて、それを使って、最後にアナウンスをするのが良さそう.
-            #### TODO: アナウンス時のは重複を避けるため、setを取ってからする.
-
+                    self.delete_player(p.player_name)  # 再起処理で消していく for 恋人
+            # TODO: ここで消す作業が生じたので、death_listをglobalに持っておいて、それを使って、最後にアナウンスをするのが良さそう.
+            # TODO: アナウンス時のは重複を避けるため、setを取ってからする.
 
     def validate_game_condition(self):
         # 成立条件: wolf > 0 and CITIZEN_SIDE > wolf
@@ -224,8 +224,13 @@ class MasterThread(Thread):
         fox_fortuned_taller = [k for k, v in self.global_object.fortune_dict.items() if self.global_object.players[v].role.role_enum == ROLES.FOX_SPIRIT]
         for name in fox_fortuned_taller: # TODO: ここはきっとdead_listにまとめる.
             self.delete_player(name) #
+        # 占い師が妖狐を占ったかの確認
+        fox_fortuned_taller = [k for k, v in self.global_object.fortune_dict.items(
+        ) if self.global_object.players[v].role.role_enum == ROLES.FOX_SPIRIT]
+        for name in fox_fortuned_taller:  # TODO: ここはきっとdead_listにまとめる.
+            self.delete_player(name)
 
-        ## 人狼/猫又いろいろ
+        # 人狼/猫又いろいろ
         max_val = max(self.global_object.attack_target.values())  # 最大値をとる
         top_user = [k for k, v in self.global_object.attack_target.items(
         ) if v == max_val]  # 最大値な人を全部取ってくる
@@ -317,7 +322,6 @@ class MasterThread(Thread):
                 for p in self.global_object.players_alive:
                     if p.player_name == pname:
                         alived_baker_bread.append(b)
-            print(alived_baker_bread)
             if len(alived_baker_bread) > 0:
                 self.broadcast_data(
                     f"今日は パン屋の方から {random.choice(alived_baker_bread)} が 皆さんの手元に届けられました！")
