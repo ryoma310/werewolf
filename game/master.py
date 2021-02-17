@@ -45,7 +45,7 @@ class MasterThread(Thread):
         self.print_header = "[*] master.py:"
 
     def broadcast_data(self, data: str, log=True):
-        for p in self.global_object.players.values():
+        for p in list(self.global_object.players.values()):
             if p.listen_broadcast:
                 p.send_data(data)
                 p.log += data + "\n"
