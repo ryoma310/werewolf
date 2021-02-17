@@ -221,6 +221,7 @@ class MasterThread(Thread):
                 # attacked_users.append(attacked_user)
                 self.delete_player(execution_user)  # player_aliveから消す
             else:
+                self.broadcast_data(f"{execution_user} は猫又でした．")
                 execution_user = self.global_object.players[execution_user].role.bit_explusion(
                 )
                 self.broadcast_data(f"{execution_user} が道連れになりました．")
