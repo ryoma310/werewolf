@@ -217,7 +217,7 @@ class MasterThread(Thread):
             if self.check_game_finish():
                 return
             # or self.global_object.players[execution_user].role.role_enum == ROLES.MONSTER_CAT:
-            while self.global_object.players[attacked_user].role.role_enum == ROLES.HUNTER:
+            while self.global_object.players[attacked_user].role.role_enum == ROLES.HUNTER or self.global_object.players[attacked_user].role.role_enum == ROLES.MONSTER_CAT:
                 if self.global_object.players[attacked_user].role.role_enum == ROLES.HUNTER:
                     self.broadcast_data(f"しかし {attacked_user} はハンターでした.")
                     attacked_user = self.global_object.players[attacked_user].role.hunt(
