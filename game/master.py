@@ -41,6 +41,7 @@ class GlobalObject:
         # self.guard_user = None #佐古追加、騎士がサイコキラーを守ったかの判別 騎士クラスは未編集
         # self.forecast_user = None #佐古追加、占い師がサイコキラーを占ったかの判別 占い師クラスは未編集
         self.submit_lock = threading.RLock()
+        self.lovers_dict: Dict[str, [str]] = {}
 
 
 class MasterThread(Thread):
@@ -121,7 +122,7 @@ class MasterThread(Thread):
         self.broadcast_data("役職一覧:\n")
 
         roles_dict_str = "\n".join(
-            [f"{k}: {v}" for k, v in self.global_object.roles_dict.items()])
+            [f"{k}: {v.value}" for k, v in self.global_object.roles_dict.items()])
         self.broadcast_data(roles_dict_str + "\n")
         self.global_object.event_players_role_select.set()  # playerスレッドにroleの選択を開始させる
 
@@ -159,6 +160,21 @@ class MasterThread(Thread):
         default_bread = ["食パン🍞", "クロワッサン🥐", "ベーグル🥯",
                          "フランスパン🥖"] + random.sample(random_bread, 2)
         return {i: p for i, p in enumerate(default_bread)}
+
+
+    def swich_role(self, target_player: PlayerThread, target_role: ROLES):
+        new_role =  getattr(classes.roles, target_role.name.lower()).player_instance(target_player.player_name, target_player, self)
+        target_player.role = new_role
+
+    
+    def check_fox_immoral(self):
+        fox_ = [p for p in self.global_object.players_alive if p.role.role_enum is ROLES.FOX_SPIRIT]
+        immoral_ = [p for p in self.global_object.players_alive if p.role.role_enum is ROLES.IMMORAL]
+        if (not fox_) and (immoral_): # foxがいなくて、immoralがいる
+            to_fox_user = random.choice(immoral_)
+            self.swich_role(to_fox_user, ROLES.FOX_SPIRIT)
+            to_fox_user.send_data("あなたは背徳者でしたが、妖狐がいなかったため、妖狐になってしまいました.")
+
 
     def vote_broadcast(self):
         self.global_object.vote_list = []  # 一応初期化
