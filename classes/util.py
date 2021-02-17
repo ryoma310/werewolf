@@ -58,3 +58,7 @@ class ROLES(Enum):
     def THIRD_FORCE_SIDE(cls):
       return cls.FOX_SPIRIT
 
+    @classproperty
+    def ALL_ROLES(cls):
+        return (r for r in ROLES)
+
