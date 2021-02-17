@@ -7,7 +7,7 @@ from collections import defaultdict
 
 from .player import PlayerThread
 import classes.roles
-from classes.util import WIN_CONDITION, ROLES
+from classes.util import WIN_CONDITION, ROLES, HANGED_WIN_DATE
 
 
 class GlobalObject:
@@ -43,6 +43,7 @@ class GlobalObject:
         # self.forecast_user = None #佐古追加、占い師がサイコキラーを占ったかの判別 占い師クラスは未編集
         self.submit_lock = threading.RLock()
         self.lovers_dict: defaultdict = defaultdict(list)
+        self.hanged_win_alone_player_name: str = None
         self.dead_list_for_magician: [str] = []
 
 
@@ -145,16 +146,7 @@ class MasterThread(Thread):
         if found:
             self.global_object.players_alive.remove(found)
             found.set_not_alive()
-            if found.role.role_enum == ROLES.FOX_SPIRIT:  # 死ぬのが妖狐ならば、背徳者道連れ
-                immorals_ = [
-                    p for p in self.global_object.players_alive if p.role.role_enum == ROLES.IMMORAL]
-                for p in immorals_:
-                    self.delete_player(p.player_name)  # 再起処理で消していく
-            # if found in self.global_object.lovers_dict: # 恋人を消していく
-            #     for p_name in self.global_object.lovers_dict[found]:
-            #         self.delete_player(p_name)  # 再起処理で消していく for 恋人
-            # TODO: ここで消す作業が生じたので、death_listをglobalに持っておいて、それを使って、最後にアナウンスをするのが良さそう.
-            # TODO: アナウンス時のは重複を避けるため、setを取ってからする.
+
 
     def validate_game_condition(self):
         # 成立条件: wolf > 0 and CITIZEN_SIDE > wolf
@@ -217,18 +209,23 @@ class MasterThread(Thread):
             "それでは, 投票したい人物を選んでください.\n選択肢:\n" + p_dict_str + "\n")
 
     def announce_cupit(self):
-        pass
-        # if self.global_object.lovers_dict: # なんか登録されてたら..
-        #     for p_name, l_s in self.global_object.lovers_dict.items():
-        #         p = self.global_object.players[p_name]
-        #         l_s_str = ", ".join(l_s)
-        #         p.send_data(f"あなたは {l_s} と結ばれています.")
+        if self.global_object.lovers_dict: # なんか登録されてたら..
+            for p_name, l_s in self.global_object.lovers_dict.items():
+                p = self.global_object.players[p_name]
+                l_s_str = ", ".join(l_s)
+                p.send_data(f"あなたは {l_s} と結ばれています.")
+
 
     def anounce_vote_result(self):
         top_user = statistics.multimode(
             self.global_object.vote_list)  # modeのlistを返す
         execution_user = random.choice(top_user)  # 重複があるとランダムに1人
         self.broadcast_data(f"投票の結果、{execution_user} に決定しました")
+        if (self.global_object.players[execution_user].role.role_enum == ROLES.HANGED) and (self.global_object.day >= HANGED_WIN_DATE.hanged_win_date(self.global_object.day)):
+            self.broadcast_data(f"が、しかし、{execution_user} は てるてる でした.\n{HANGED_WIN_DATE.hanged_win_date()}日以降のため、{execution_user}の勝利となります.")
+            return # 呼び出し元直後の check_game_finish で終了するはず
+
+
         self.delete_player(execution_user)  # player_aliveから消す
         # ゲーム終了条件を満たしているのか？
         if self.check_game_finish():
@@ -342,6 +339,19 @@ class MasterThread(Thread):
         for dead in dead_list:
             self.delete_player(dead)
 
+        # TODO: 幅優先探索黄色い人任せた! 妖狐と背徳者の巻き添い + 恋人の後追い で消す人を取れるだけ取ってくる.
+        follow_up_suicide = []
+
+        for dead in dead_list:
+            if dead in self.global_object.lovers_dict:
+                follow_up_suicide += self.global_object.lovers_dict[dead]
+        if follow_up_suicide:
+            follow_up_suicide = list(set(follow_up_suicide))
+            self.broadcast_data(f"{", ".join(follow_up_suicide)} たちが恋人を失った悲しみに耐えきれず、後追い自殺をしてしまいました..")
+            for suicider in follow_up_suicide:
+                self.delete_player(suicider)
+
+
         if self.check_game_finish():
             return
 
@@ -388,7 +398,12 @@ class MasterThread(Thread):
 
         # print(self.global_object.players_alive)
 
-    def check_game_finish(self):
+    def check_game_finish(self, hanged_win_alone=None):
+        if hanged_win_alone: # てるてる一人勝ち
+            self.global_object.hanged_win_alone_player_name = hanged_win_alone
+            self.global_object.finish_conditio = WIN_CONDITION.HANGED_WIN_ALONE
+            return True
+
         wolf_side_ = [
             p for p in self.global_object.players_alive if p.role.role_enum in ROLES.WEREWOLF_SIDE]
         citizen_side_ = [

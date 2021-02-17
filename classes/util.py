@@ -12,7 +12,20 @@ class WIN_CONDITION(Flag):
     NO_WOLFS_BUT_THIRD_FORCE = auto()
     WOLF_EQ_OR_MORE_THAN_CITIZEN_BUT_THIRD_FORCE = auto()
     THIRD_FORCE_LEFT = NO_WOLFS_BUT_THIRD_FORCE | WOLF_EQ_OR_MORE_THAN_CITIZEN_BUT_THIRD_FORCE
+    HANGED_WIN_ALONE = auto() # てるてる一人勝ち
 
+
+class HANGED_WIN_DATE:
+    @staticmethod
+    def hanged_win_date(player_num):
+        if player_num == 4:
+            return 2
+        elif player_num in [5, 6]:
+            return 3
+        elif player_num in [7, 8, 9, 10]:
+            return 4
+        else:
+            return 5
 
 
 class classproperty(object):
