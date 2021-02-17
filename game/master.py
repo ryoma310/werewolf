@@ -36,6 +36,7 @@ class GlobalObject:
         self.finish_condition: WIN_CONDITION = None
         self.check_username_lock = threading.RLock()
         self.voted_user = None
+        self.fortune_dict: Dict[str,str] = {}
         # self.guard_user = None #佐古追加、騎士がサイコキラーを守ったかの判別 騎士クラスは未編集
         # self.forecast_user = None #佐古追加、占い師がサイコキラーを占ったかの判別 占い師クラスは未編集
 
@@ -205,6 +206,7 @@ class MasterThread(Thread):
         self.global_object.suspect_list = []
 
     def anounce_attack_result(self):
+        dead_list = []
         max_val = max(self.global_object.attack_target.values())  # 最大値をとる
         top_user = [k for k, v in self.global_object.attack_target.items(
         ) if v == max_val]  # 最大値な人を全部取ってくる
@@ -215,25 +217,33 @@ class MasterThread(Thread):
         revenged_knights = [k for k, v in p_dict.items() if (v.role.role_enum is ROLES.KNIGHT) and ] # 役職が騎士 and 守った相手がサイコキラー　というif文を作りたい
         for rvk in revenged_knights:
             self.broadcast_data(f"昨晩の犠牲者は {rvk} でした.")
-            self.delete_player(rvk)
+            #self.delete_player(rvk)
+            dead_list.append(rvk)
         # 占い師がサイコキラーを占っていたかどうか
         revenged_fortune_tellers = [k for k, v in p_dict.items() if (v.role.role_enum is ROLES.FORTUNE_TELLER) and ] # 役職が占い師 and 占った相手がサイコキラー　というif文を作りたい
         for rvf in revenged_fortune_tellers:
             self.broadcast_data(f"昨晩の犠牲者は {rvf} でした.")
-            self.delete_player(rvf)
+            #self.delete_player(rvf)
+            dead_list.append(rvf)
         # attacked_user がサイコキラーだった場合、襲撃しようとした人狼(の内一人)が返り討ちに遭う
         if self.global_object.players[attacked_user].role.role_enum == ROLES.PSYCHO_KILLER:
             revenged_wolf = self.global_object.players[attacked_user].role.revenge_wolf()
             self.broadcast_data(f"昨晩の犠牲者は {revenged_wolf} でした.")
-            self.delete_player(revenged_wolf)
-            if self.check_game_finish(): return
+            dead_list.append(revenged_wolf)
+            #self.delete_player(revenged_wolf)
+            #if self.check_game_finish(): return
             # この場合、attacked_userは死なないはず
-
+        # まず、ゲームが終わるかチェック
+        #if dead_list is not []:
+        for dead in dead_list:
+            self.delete_player(dead)
+        if self.check_game_finish(): return
         # ここで、騎士の守りをチェック
-        elif attacked_user not in self.global_object.guard_list:
+        if attacked_user not in self.global_object.guard_list:
             self.broadcast_data(f"昨晩の犠牲者は {attacked_user} でした.")
             #attacked_users = []
             # attacked_users.append(attacked_user)
+            dead_list.append(attacked_user)
             self.delete_player(attacked_user)  # player_aliveから消す
             # ゲーム終了条件を満たしているのか？
             if self.check_game_finish():
@@ -248,11 +258,13 @@ class MasterThread(Thread):
                     self.broadcast_data(
                         f"ハンターの一撃により {attacked_user} が犠牲となりました.")
                     # attacked_users.append(attacked_user)
+                    dead_list.append(attacked_user) 
                     self.delete_player(attacked_user)  # player_aliveから消す
                 else:
                     attacked_user = self.global_object.players[attacked_user].role.bit_attacked(
                     )
                     self.broadcast_data(f"{attacked_user} が道連れになりました．")
+                    dead_list.append(attacked_user) 
                     self.delete_player(attacked_user)  # player_aliveから消す
                 # ゲーム終了条件を満たしているのか？
                 if self.check_game_finish():
@@ -261,7 +273,7 @@ class MasterThread(Thread):
             # if self.global_object.players[execution_user].role.role_enum == ROLES.MONSTER_CAT:
             #     pass
             # bit_attacked
-        else:
+        if dead_list is []:
             # 人狼がサイコキラーを襲撃せず、騎士の守り先を襲撃した場合
             self.broadcast_data(f"昨晩の犠牲者は いません でした.")
         self.global_object.attack_target = defaultdict(int)  # 初期化
