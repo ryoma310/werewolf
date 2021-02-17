@@ -314,6 +314,19 @@ class MasterThread(Thread):
         for dead in dead_list:
             self.delete_player(dead)
 
+        # TODO: 幅優先探索黄色い人任せた! 妖狐と背徳者の巻き添い + 恋人の後追い で消す人を取れるだけ取ってくる.
+        follow_up_suicide = []
+        
+        for dead in dead_list:
+            if dead in self.global_object.lovers_dict:
+                follow_up_suicide += self.global_object.lovers_dict[dead]
+        if follow_up_suicide:
+            follow_up_suicide = list(set(follow_up_suicide))
+            self.broadcast_data(f"{", ".join(follow_up_suicide)} たちが恋人を失った悲しみに耐えきれず、後追い自殺をしてしまいました..")
+            for suicider in follow_up_suicide:
+                self.delete_player(suicider)
+
+
         if self.check_game_finish():
             return
 
