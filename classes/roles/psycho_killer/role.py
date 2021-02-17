@@ -31,6 +31,12 @@ class Psycho_Killer_Role(Role_AbstClass):
     # role_name -> role_enum.valueを返す
     # を実装
 
+    # 人狼が襲撃した際に返り討ちにする
+    def revenge_wolf(self):
+        p_dict = self.master_.alive_players_dict()
+        wolfs = [k for k, v in p_dict.items() if (v.role.role_enum is ROLES.WEREWOLF) and v.role.try_attack == self.player_.player_name]
+        attacked_wolf = random.choice(wolfs)
+        return attacked_wolf
 
     # 役職定数: abstractproperty implementation
     @property
