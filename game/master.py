@@ -421,6 +421,8 @@ class MasterThread(Thread):
             # 以降ゲームが成立する場合、実施
             self.broadcast_data("役職選択の結果、このゲームは成立します.")
 
+            self.check_fox_immoral()
+
             # 0日目の処理
             self.broadcast_data(f"\n---------- 恐ろしい夜がやってきました ----------\n")
             print(self.print_header, "0 day")
