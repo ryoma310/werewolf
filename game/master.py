@@ -1,34 +1,3 @@
-Skip to content
-Search or jump to…
-
-Pull requests
-Issues
-Marketplace
-Explore
- 
-@ksbowler 
-ryoma310
-/
-werewolf
-1
-00
-Code
-Issues
-Pull requests
-Actions
-Projects
-Wiki
-Security
-Insights
-werewolf/game/master.py /
-@emtsubasa
-emtsubasa add baker role
-Latest commit e10dddd 30 minutes ago
- History
- 2 contributors
-@ryoma310@emtsubasa
-393 lines (342 sloc)  18.3 KB
-  
 from threading import Thread, Event
 import time
 import threading
@@ -422,16 +391,3 @@ class MasterThread(Thread):
         self.broadcast_data("---------- game end! ----------\n")
         self.end_game()
         self.global_object.event_wait_next.set()
-© 2021 GitHub, Inc.
-Terms
-Privacy
-Security
-Status
-Docs
-Contact GitHub
-Pricing
-API
-Training
-Blog
-About
-
