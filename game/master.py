@@ -146,7 +146,10 @@ class MasterThread(Thread):
                 immorals_ = [
                     p for p in self.global_object.players_alive if p.role.role_enum == ROLES.IMMORAL]
                 for p in immorals_:
-                    self.delete_player(p.player_name)  # 再起処理で消していく for 恋人
+                    self.delete_player(p.player_name)  # 再起処理で消していく
+            if found in self.lovers_dict: # 恋人を消していく
+                for p_name in self.lovers_dict[found]:
+                    self.delete_player(p_name)  # 再起処理で消していく for 恋人
             # TODO: ここで消す作業が生じたので、death_listをglobalに持っておいて、それを使って、最後にアナウンスをするのが良さそう.
             # TODO: アナウンス時のは重複を避けるため、setを取ってからする.
 
