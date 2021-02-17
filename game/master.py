@@ -1,3 +1,34 @@
+Skip to content
+Search or jump to…
+
+Pull requests
+Issues
+Marketplace
+Explore
+ 
+@ksbowler 
+ryoma310
+/
+werewolf
+1
+00
+Code
+Issues
+Pull requests
+Actions
+Projects
+Wiki
+Security
+Insights
+werewolf/game/master.py /
+@emtsubasa
+emtsubasa add baker role
+Latest commit e10dddd 30 minutes ago
+ History
+ 2 contributors
+@ryoma310@emtsubasa
+393 lines (342 sloc)  18.3 KB
+  
 from threading import Thread, Event
 import time
 import threading
@@ -31,6 +62,7 @@ class GlobalObject:
         self.vote_list: [str] = []
         self.suspect_list: [str] = []
         self.guard_list: [str] = []
+        self.bake_dict: defaultdict = defaultdict(str)
         self.attack_target: defaultdict = defaultdict(int)
         self.finish_condition: WIN_CONDITION = None
         self.check_username_lock = threading.RLock()
@@ -105,6 +137,9 @@ class MasterThread(Thread):
             self.global_object.attack_target[user] += priority
         elif submit_type == "guard":
             self.global_object.guard_list.append(user)
+        elif submit_type == "bake":
+            b, p = user.split()
+            self.global_object.bake_dict[p] = b
 
     def select_role(self):
         self.broadcast_data("役職一覧:\n")
@@ -136,6 +171,13 @@ class MasterThread(Thread):
         alives = self.global_object.players_alive
         return {i: p.player_name for i, p in enumerate(alives)}
 
+    def bread_dict(self):
+        random_bread = ["フライパン🍳", "パンツ", "チュロス",
+                        "メロンパン", "ショートケーキ🍰", "ピザ", "チョココロネ", "ドーナツ🍩", "サンドウィッチ🥪"]
+        default_bread = ["食パン🍞", "クロワッサン🥐", "ベーグル🥯",
+                         "フランスパン🥖"] + random.sample(random_bread, 2)
+        return {i: p for i, p in enumerate(default_bread)}
+
     def vote_broadcast(self):
         self.global_object.vote_list = []  # 一応初期化
         self.global_object.voted_user = None
@@ -153,20 +195,24 @@ class MasterThread(Thread):
         self.broadcast_data(f"投票の結果、{execution_user} に決定しました")
         self.delete_player(execution_user)  # player_aliveから消す
         # ゲーム終了条件を満たしているのか？
-        if self.check_game_finish(): return
+        if self.check_game_finish():
+            return
         while self.global_object.players[execution_user].role.role_enum == ROLES.HUNTER or self.global_object.players[execution_user].role.role_enum == ROLES.MONSTER_CAT:
             if self.global_object.players[execution_user].role.role_enum == ROLES.HUNTER:
                 self.broadcast_data(f"しかし {execution_user} はハンターでした.")
-                execution_user = self.global_object.players[execution_user].role.hunt()
+                execution_user = self.global_object.players[execution_user].role.hunt(
+                )
                 self.broadcast_data(f"ハンターの一撃により {execution_user} が犠牲となりました.")
-                #attacked_users.append(attacked_user)
+                # attacked_users.append(attacked_user)
                 self.delete_player(execution_user)  # player_aliveから消す
             else:
-                execution_user = self.global_object.players[execution_user].role.bit_explusion()
+                execution_user = self.global_object.players[execution_user].role.bit_explusion(
+                )
                 self.broadcast_data(f"{execution_user} が道連れになりました．")
                 self.delete_player(execution_user)
             # ゲーム終了条件を満たしているのか？
-            if self.check_game_finish(): return
+            if self.check_game_finish():
+                return
         """
         if self.global_object.players[execution_user].role.role_enum == ROLES.MONSTER_CAT:
             execution_user = self.global_object.players[attacked_user].role.bit_explusion()
@@ -199,39 +245,65 @@ class MasterThread(Thread):
         if attacked_user not in self.global_object.guard_list:
             self.broadcast_data(f"昨晩の犠牲者は {attacked_user} でした.")
             #attacked_users = []
-            #attacked_users.append(attacked_user)
+            # attacked_users.append(attacked_user)
             self.delete_player(attacked_user)  # player_aliveから消す
             # ゲーム終了条件を満たしているのか？
-            if self.check_game_finish(): return
-            while self.global_object.players[attacked_user].role.role_enum == ROLES.HUNTER or self.global_object.players[execution_user].role.role_enum == ROLES.MONSTER_CAT:
+            if self.check_game_finish():
+                return
+            # or self.global_object.players[execution_user].role.role_enum == ROLES.MONSTER_CAT:
+            while self.global_object.players[attacked_user].role.role_enum == ROLES.HUNTER or self.global_object.players[attacked_user].role.role_enum == ROLES.MONSTER_CAT:
                 if self.global_object.players[attacked_user].role.role_enum == ROLES.HUNTER:
                     self.broadcast_data(f"しかし {attacked_user} はハンターでした.")
-                    attacked_user = self.global_object.players[attacked_user].role.hunt()
-                
-                    self.broadcast_data(f"ハンターの一撃により {attacked_user} が犠牲となりました.")
-                    #attacked_users.append(attacked_user)
+                    attacked_user = self.global_object.players[attacked_user].role.hunt(
+                    )
+
+                    self.broadcast_data(
+                        f"ハンターの一撃により {attacked_user} が犠牲となりました.")
+                    # attacked_users.append(attacked_user)
                     self.delete_player(attacked_user)  # player_aliveから消す
                 else:
-                    attacked_user = self.global_object.players[attacked_user].role.bit_attacked()
+                    attacked_user = self.global_object.players[attacked_user].role.bit_attacked(
+                    )
                     self.broadcast_data(f"{attacked_user} が道連れになりました．")
                     self.delete_player(attacked_user)  # player_aliveから消す
                 # ゲーム終了条件を満たしているのか？
-                if self.check_game_finish(): return
-            #for atk in attacked_users: self.delete_player(atk)  # player_aliveから消す
-            if self.global_object.players[execution_user].role.role_enum == ROLES.MONSTER_CAT:
-            bit_attacked
+                if self.check_game_finish():
+                    return
+            # for atk in attacked_users: self.delete_player(atk)  # player_aliveから消す
+            # if self.global_object.players[execution_user].role.role_enum == ROLES.MONSTER_CAT:
+            #     pass
+            # bit_attacked
         else:
             self.broadcast_data(f"昨晩の犠牲者は いません でした.")
         self.global_object.attack_target = defaultdict(int)  # 初期化
         self.global_object.guard_target = []
 
+    def anounce_bread_result(self):
+        bakers_ = [
+            p for p in self.global_object.players_alive if p.role.role_enum is ROLES.BAKER]
+        if len(bakers_) != 0:
+            alived_baker_bread = []
+            # 愚直にまわす
+            for pname, b in self.global_object.bake_dict.items():
+                for p in self.global_object.players_alive:
+                    if p.player_name == pname:
+                        alived_baker_bread.append(b)
+            print(alived_baker_bread)
+            if len(alived_baker_bread) > 0:
+                self.broadcast_data(
+                    f"今日は {random.choice(alived_baker_bread)} が 皆さんの手元に届けられました！")
+            else:
+                self.broadcast_data(f"パンは 届きませんでした…")
+
+        # print(self.global_object.players_alive)
+
     def check_game_finish(self):
         # TODO: 後で変更
         wolfs_ = [
-            p for p in self.global_object.players_alive if p.role.role_enum in ROLES.WEREWOLF_SIDE]
+            p for p in self.global_object.players_alive if p.role.role_enum is ROLES.WEREWOLF]
         # TODO: 後で変更
         not_wolfs_ = [
-            p for p in self.global_object.players_alive if p.role.role_enum not in ROLES.WEREWOLF_SIDE]
+            p for p in self.global_object.players_alive if p.role.role_enum is not ROLES.WEREWOLF]
         if len(wolfs_) == 0:  # 全ての人狼が追放
             self.global_object.finish_condition = WIN_CONDITION.NO_WOLFS
             return True
@@ -307,6 +379,7 @@ class MasterThread(Thread):
                     self.finish_statement()
                     break
                 self.anounce_suspect_result()  # 疑うの結果報告
+                self.anounce_bread_result()
                 self.global_object.event_wait_next.set()
                 self.global_object.event_wait_next.clear()
 
@@ -349,3 +422,16 @@ class MasterThread(Thread):
         self.broadcast_data("---------- game end! ----------\n")
         self.end_game()
         self.global_object.event_wait_next.set()
+© 2021 GitHub, Inc.
+Terms
+Privacy
+Security
+Status
+Docs
+Contact GitHub
+Pricing
+API
+Training
+Blog
+About
+
