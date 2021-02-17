@@ -33,6 +33,7 @@ class GlobalObject:
         self.guard_dict: defaultdict = defaultdict(str)
         self.bake_dict: defaultdict = defaultdict(str)
         self.attack_target: defaultdict = defaultdict(int)
+        self.fortune_dict: defaultdict = defaultdict(str)
         self.finish_condition: WIN_CONDITION = None
         self.check_username_lock = threading.RLock()
         self.voted_user = None
@@ -398,6 +399,7 @@ class MasterThread(Thread):
                 self.global_object.suspect_list = []  # 市民疑う用配列の初期化
                 self.global_object.attack_target = defaultdict(
                     int)  # 人狼襲撃用配列の初期化
+                self.global_object.fortune_dict = {}
                 self.global_object.event_wait_next.set()
                 self.global_object.event_wait_next.clear()
 
