@@ -254,7 +254,7 @@ class MasterThread(Thread):
     def anounce_attack_result(self):
         dead_list = []
         # 占い師が妖狐を占ったかの確認
-        fox_fortuned_taller = [k for k, v in self.global_object.fortune_dict.items(
+        fox_fortuned_taller = [v for v in self.global_object.fortune_dict.values(
         ) if self.global_object.players[v].role.role_enum == ROLES.FOX_SPIRIT]
         for name in fox_fortuned_taller:  # TODO: ここはきっとdead_listにまとめる.
             dead_list.append(name)
@@ -408,6 +408,12 @@ class MasterThread(Thread):
             [f"{p_role}: {p_name}" for p_name, p_role in p_r_dict_sorted])
         self.broadcast_data("役職は以下の通りでした.\n" + p_r_dict_sorted_str)
 
+    def show_alive_players(self):
+        p_dict = self.alive_players_dict()
+        p_dict_str = "\n".join(
+            [f"{str(pid)}:{name}"for pid, name in p_dict.items()])
+        self.broadcast_data("現在の生存者\n" + p_dict_str)
+
     def calc_discuss_time(self) -> (str, int):
         # returns ("xx分", その秒数)
         day_ = self.global_object.day
@@ -466,6 +472,8 @@ class MasterThread(Thread):
                 self.global_object.event_wait_next.clear()
 
                 self.wait_answer_start()
+
+                self.show_alive_players()
 
                 ## 昼: 投票
                 self.broadcast_data(
