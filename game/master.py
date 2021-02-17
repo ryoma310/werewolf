@@ -347,7 +347,7 @@ class MasterThread(Thread):
                 follow_up_suicide += self.global_object.lovers_dict[dead]
         if follow_up_suicide:
             follow_up_suicide = list(set(follow_up_suicide))
-            self.broadcast_data(f"{", ".join(follow_up_suicide)} たちが恋人を失った悲しみに耐えきれず、後追い自殺をしてしまいました..")
+            self.broadcast_data(f"{', '.join(follow_up_suicide)} たちが恋人を失った悲しみに耐えきれず、後追い自殺をしてしまいました..")
             for suicider in follow_up_suicide:
                 self.delete_player(suicider)
 
