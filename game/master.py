@@ -152,6 +152,13 @@ class MasterThread(Thread):
         execution_user = random.choice(top_user)  # 重複があるとランダムに1人
         self.broadcast_data(f"投票の結果、{execution_user} に決定しました")
         self.delete_player(execution_user)  # player_aliveから消す
+        while self.global_object.players[execution_user].role.role_enum == ROLES.HUNTER:
+                self.broadcast_data(f"しかし {execution_user} はハンターでした.")
+                execution_user = self.global_object.players[execution_user].role.hunt()
+                
+                self.broadcast_data(f"ハンターの一撃により {execution_user} が犠牲となりました.")
+                #attacked_users.append(attacked_user)
+                self.delete_player(execution_user)  # player_aliveから消す
         self.global_object.voted_user = execution_user
         self.global_object.vote_list = []
 
@@ -170,7 +177,17 @@ class MasterThread(Thread):
         # ここで、騎士の守りをチェック
         if attacked_user not in self.global_object.guard_list:
             self.broadcast_data(f"昨晩の犠牲者は {attacked_user} でした.")
+            #attacked_users = []
+            #attacked_users.append(attacked_user)
             self.delete_player(attacked_user)  # player_aliveから消す
+            while self.global_object.players[attacked_user].role.role_enum == ROLES.HUNTER:
+                self.broadcast_data(f"しかし {attacked_user} はハンターでした.")
+                attacked_user = self.global_object.players[attacked_user].role.hunt()
+                
+                self.broadcast_data(f"ハンターの一撃により {attacked_user} が犠牲となりました.")
+                #attacked_users.append(attacked_user)
+                self.delete_player(attacked_user)  # player_aliveから消す
+            #for atk in attacked_users: self.delete_player(atk)  # player_aliveから消す
         else:
             self.broadcast_data(f"昨晩の犠牲者は いません でした.")
         self.global_object.attack_target = defaultdict(int)  # 初期化
