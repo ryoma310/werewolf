@@ -30,7 +30,7 @@ class GlobalObject:
         self.players_alive: list[PlayerThread] = []
         self.vote_list: [str] = []
         self.suspect_list: [str] = []
-        self.guard_list: [str] = []
+        self.guard_dict: defaultdict = defaultdict(str)
         self.bake_dict: defaultdict = defaultdict(str)
         self.attack_target: defaultdict = defaultdict(int)
         self.finish_condition: WIN_CONDITION = None
@@ -108,7 +108,8 @@ class MasterThread(Thread):
             priority = kwargs.get('priority', 1)
             self.global_object.attack_target[user] += priority
         elif submit_type == "guard":
-            self.global_object.guard_list.append(user)
+            g, p = user.split()
+            self.global_object.guard_dict[p] = g
         elif submit_type == "bake":
             b, p = user.split()
             self.global_object.bake_dict[p] = b
@@ -132,8 +133,10 @@ class MasterThread(Thread):
 
     def validate_game_condition(self):
         # 成立条件: wolf > 0 and CITIZEN_SIDE > wolf
-        wolfs_ = [p for p in self.global_object.players_alive if p.role.role_enum in ROLES.WEREWOLF_SIDE]
-        citizens_ = [p for p in self.global_object.players_alive if p.role.role_enum in ROLES.CITIZEN_SIDE]
+        wolfs_ = [
+            p for p in self.global_object.players_alive if p.role.role_enum in ROLES.WEREWOLF_SIDE]
+        citizens_ = [
+            p for p in self.global_object.players_alive if p.role.role_enum in ROLES.CITIZEN_SIDE]
         return True if (len(wolfs_) > 0) and (len(citizens_) > len(wolfs_)) else False
 
     def alive_players_dict(self):
@@ -239,7 +242,8 @@ class MasterThread(Thread):
             self.delete_player(dead)
         if self.check_game_finish(): return
         # ここで、騎士の守りをチェック
-        if attacked_user not in self.global_object.guard_list:
+        guard_list = self.global_object.guard_dict.values()
+        if attacked_user not in guard_list:
             self.broadcast_data(f"昨晩の犠牲者は {attacked_user} でした.")
             #attacked_users = []
             # attacked_users.append(attacked_user)
@@ -299,19 +303,22 @@ class MasterThread(Thread):
         # print(self.global_object.players_alive)
 
     def check_game_finish(self):
-        wolf_side_ = [p for p in self.global_object.players_alive if p.role.role_enum in ROLES.WEREWOLF_SIDE]
-        citizen_side_ = [p for p in self.global_object.players_alive if p.role.role_enum in ROLES.CITIZEN_SIDE]
-        third_force_ = [p for p in self.global_object.players_alive if p.role.role_enum in ROLES.THIRD_FORCE_SIDE]
+        wolf_side_ = [
+            p for p in self.global_object.players_alive if p.role.role_enum in ROLES.WEREWOLF_SIDE]
+        citizen_side_ = [
+            p for p in self.global_object.players_alive if p.role.role_enum in ROLES.CITIZEN_SIDE]
+        third_force_ = [
+            p for p in self.global_object.players_alive if p.role.role_enum in ROLES.THIRD_FORCE_SIDE]
         if len(wolf_side_) == 0:  # 全ての人狼が追放
-            if third_force_: # 妖狐いた
+            if third_force_:  # 妖狐いた
                 self.global_object.finish_condition = WIN_CONDITION.NO_WOLFS_BUT_THIRD_FORCE
-            else: # 妖狐いない
+            else:  # 妖狐いない
                 self.global_object.finish_condition = WIN_CONDITION.NO_WOLFS
             return True
         elif len(wolf_side_) >= len(citizen_side_):  # 市民が人狼以下
-            if third_force_: # 妖狐いた
+            if third_force_:  # 妖狐いた
                 self.global_object.finish_condition = WIN_CONDITION.WOLF_EQ_OR_MORE_THAN_CITIZEN_BUT_THIRD_FORCE
-            else: # 妖狐いない
+            else:  # 妖狐いない
                 self.global_object.finish_condition = WIN_CONDITION.WOLF_EQ_OR_MORE_THAN_CITIZEN
             return True
         return False
@@ -324,12 +331,12 @@ class MasterThread(Thread):
         elif self.global_object.finish_condition == WIN_CONDITION.WOLF_EQ_OR_MORE_THAN_CITIZEN:
             self.broadcast_data("この村の市民と人狼が同数となりました")
             self.broadcast_data("よって、人狼陣営の勝利です！\n")
-        
+
         elif self.global_object.finish_condition == WIN_CONDITION.NO_WOLFS_BUT_THIRD_FORCE:
             self.broadcast_data("この村から全ての人狼が追放されました")
             self.broadcast_data("が、妖狐がいました.")
             self.broadcast_data("よって、第三陣営の勝利です！\n")
-        
+
         elif self.global_object.finish_condition == WIN_CONDITION.WOLF_EQ_OR_MORE_THAN_CITIZEN_BUT_THIRD_FORCE:
             self.broadcast_data("この村の市民と人狼が同数となりました")
             self.broadcast_data("が、妖狐がいました.")
