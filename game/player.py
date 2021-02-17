@@ -164,7 +164,7 @@ class PlayerThread(Thread):
 
     def set_not_alive(self):
         self.alive = False
-        self.send_data("死んでしましました.\nもう生きてはいませんが、引き続き様子を見守りましょう")
+        self.send_data("死んでしまいました.\nもう生きてはいませんが、引き続き様子を見守りましょう")
         # ここで、役職公開とかもあり.
 
 
@@ -239,6 +239,10 @@ class PlayerThread(Thread):
             ########################
 
 
+        if self.master_.global_object.finish_condition == self.role.win_condition:
+            _ = self.send_data(f"おめでとうございます!勝ちました!\n")
+        else:
+            _ = self.send_data(f"負けてしまいました.また次がんばりましょう.\n")
 
         _ = self.send_data(f"thank you, {self.player_name}! see you!\n")
 
