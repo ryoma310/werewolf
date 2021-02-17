@@ -12,10 +12,7 @@ class _ZERO(Knowledge_AbstClass):
         self.master_ = master_
 
     def knowledge(self):
-        # 仲間の人狼
-        #werewolfs = [p.player_name for p in self.master_.global_object.players.values() if p.role.role_enum is ROLES.WEREWOLF]
-        #self.player_.send_data(f"knowledge: このゲームにおける人狼は {', '.join(werewolfs)} の{len(werewolfs)}人です.\n")
-        pass
+        self.player_.send_data("knowledge: No info provided to your role\n")
 
 class _MORNING(Knowledge_AbstClass):
     def __init__(self, player_, master_):
@@ -42,10 +39,7 @@ class _MIDNIGHT(Knowledge_AbstClass):
         self.master_ = master_
 
     def knowledge(self):
-        # 仲間の人狼
-        werewolfs = [p.player_name for p in self.master_.global_object.players.values() if p.role.role_enum is ROLES.WEREWOLF]
-        self.player_.send_data(f"knowledge: このゲームにおける人狼は {', '.join(werewolfs)} の{len(werewolfs)}人です.\n")
-        # self.player_.send_data("knowledge: No info provided to your role\n")
+        self.player_.send_data("knowledge: No info provided to your role\n")
 
 
 # ここまで
