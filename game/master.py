@@ -33,12 +33,14 @@ class GlobalObject:
         self.guard_dict: defaultdict = defaultdict(str)
         self.bake_dict: defaultdict = defaultdict(str)
         self.attack_target: defaultdict = defaultdict(int)
+        self.fortune_dict: defaultdict = defaultdict(str)
         self.finish_condition: WIN_CONDITION = None
         self.check_username_lock = threading.RLock()
         self.voted_user = None
         self.fortune_dict: defaultdict = defaultdict(str)
         # self.guard_user = None #佐古追加、騎士がサイコキラーを守ったかの判別 騎士クラスは未編集
         # self.forecast_user = None #佐古追加、占い師がサイコキラーを占ったかの判別 占い師クラスは未編集
+        self.submit_lock = threading.RLock()
 
 
 class MasterThread(Thread):
@@ -100,19 +102,20 @@ class MasterThread(Thread):
             self.global_object.event_wait_answer.set()
 
     def submit_answer(self, submit_type, user, **kwargs):
-        if submit_type == "vote":
-            self.global_object.vote_list.append(user)
-        elif submit_type == "suspect":
-            self.global_object.suspect_list.append(user)
-        elif submit_type == "attack":
-            priority = kwargs.get('priority', 1)
-            self.global_object.attack_target[user] += priority
-        elif submit_type == "guard":
-            g, p = user.split()
-            self.global_object.guard_dict[p] = g
-        elif submit_type == "bake":
-            b, p = user.split()
-            self.global_object.bake_dict[p] = b
+        with self.global_object.submit_lock:
+            if submit_type == "vote":
+                self.global_object.vote_list.append(user)
+            elif submit_type == "suspect":
+                self.global_object.suspect_list.append(user)
+            elif submit_type == "attack":
+                priority = kwargs.get('priority', 1)
+                self.global_object.attack_target[user] += priority
+            elif submit_type == "guard":
+                g, p = user.split()
+                self.global_object.guard_dict[p] = g
+            elif submit_type == "bake":
+                b, p = user.split()
+                self.global_object.bake_dict[p] = b
 
     def select_role(self):
         self.broadcast_data("役職一覧:\n")
@@ -130,6 +133,13 @@ class MasterThread(Thread):
         if found:
             self.global_object.players_alive.remove(found)
             found.set_not_alive()
+            if found.role.role_enum == ROLES.FOX_SPIRIT: # 死ぬのが妖狐ならば、背徳者道連れ
+                immorals_ = [p for p in self.global_object.players_alive if p.role.role_enum == ROLES.IMMORAL]
+                for p in immorals_:
+                    self.delete_player(p.player_name) # 再起処理で消していく for 恋人
+            #### TODO: ここで消す作業が生じたので、death_listをglobalに持っておいて、それを使って、最後にアナウンスをするのが良さそう.
+            #### TODO: アナウンス時のは重複を避けるため、setを取ってからする.
+
 
     def validate_game_condition(self):
         # 成立条件: wolf > 0 and CITIZEN_SIDE > wolf
@@ -210,6 +220,12 @@ class MasterThread(Thread):
 
     def anounce_attack_result(self):
         dead_list = []
+        ## 占い師が妖狐を占ったかの確認
+        fox_fortuned_taller = [k for k, v in self.global_object.fortune_dict.items() if self.global_object.players[v].role.role_enum == ROLES.FOX_SPIRIT]
+        for name in fox_fortuned_taller: # TODO: ここはきっとdead_listにまとめる.
+            self.delete_player(name) #
+
+        ## 人狼/猫又いろいろ
         max_val = max(self.global_object.attack_target.values())  # 最大値をとる
         top_user = [k for k, v in self.global_object.attack_target.items(
         ) if v == max_val]  # 最大値な人を全部取ってくる
@@ -251,7 +267,7 @@ class MasterThread(Thread):
         if self.check_game_finish(): return
         # ここで、騎士の守りをチェック
         guard_list = self.global_object.guard_dict.values()
-        if attacked_user not in guard_list:
+        if (attacked_user not in guard_list) and (self.global_object.players[attacked_user].role.role_enum is not ROLES.FOX_SPIRIT):
             self.broadcast_data(f"昨晩の犠牲者は {attacked_user} でした.")
             #attacked_users = []
             # attacked_users.append(attacked_user)
@@ -441,6 +457,7 @@ class MasterThread(Thread):
                 self.global_object.suspect_list = []  # 市民疑う用配列の初期化
                 self.global_object.attack_target = defaultdict(
                     int)  # 人狼襲撃用配列の初期化
+                self.global_object.fortune_dict = {}
                 self.global_object.event_wait_next.set()
                 self.global_object.event_wait_next.clear()
 
