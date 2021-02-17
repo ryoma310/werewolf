@@ -45,7 +45,7 @@ class ROLES(Enum):
     HANGED = "てるてる"
 
     CUPID = "キューピット"
-    LOVER = "恋人"
+    # LOVER = "恋人"
 
     MAGICIAN = "魔術師"
 

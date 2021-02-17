@@ -26,7 +26,7 @@ class GlobalObject:
         self.event_wait_next = Event()
         self.end_flag: bool = False
         self.roles_dict = {i: r for i, r in enumerate(
-            classes.roles.role_list())}
+            ROLES.ALL_ROLES)}
         self.players_alive: list[PlayerThread] = []
         self.vote_list: [str] = []
         self.suspect_list: [str] = []

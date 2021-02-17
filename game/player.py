@@ -130,7 +130,7 @@ class PlayerThread(Thread):
             if not ok_recv:
                 sys.exit(0)
             if data.isdigit() and (int(data) in role_dict_.keys()):
-                role_ = getattr(classes.roles, role_dict_[int(data)]).player_instance(self.player_name, self, self.master_)
+                role_ = getattr(classes.roles, role_dict_[int(data)].name.lower()).player_instance(self.player_name, self, self.master_)
                 self.role = role_
                 self.listen_broadcast = True
                 self.master_.wait_answer_done()
