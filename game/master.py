@@ -31,6 +31,7 @@ class GlobalObject:
         self.vote_list: [str] = []
         self.suspect_list: [str] = []
         self.guard_list: [str] = []
+        self.bread_list: [str] = []
         self.attack_target: defaultdict = defaultdict(int)
         self.finish_condition: WIN_CONDITION = None
         self.check_username_lock = threading.RLock()
@@ -136,6 +137,14 @@ class MasterThread(Thread):
         alives = self.global_object.players_alive
         return {i: p.player_name for i, p in enumerate(alives)}
 
+    def bread_dict(self):
+        random_bread = ["フライパン🍳", "パンツ", "チュロス",
+                        "メロンパン", "ショートケーキ🍰", "ピザ", "チョココロネ", "ドーナツ🍩", "サンドウィッチ🥪"]
+        default_bread = ["食パン🍞", "クロワッサン🥐", "ベーグル🥯",
+                         "フランスパン🥖"] + random.sample(random_bread, 2)
+        print(default_bread)
+        return {i: p for i, p in enumerate(default_bread)}
+
     def vote_broadcast(self):
         self.global_object.vote_list = []  # 一応初期化
         self.global_object.voted_user = None
@@ -153,12 +162,13 @@ class MasterThread(Thread):
         self.broadcast_data(f"投票の結果、{execution_user} に決定しました")
         self.delete_player(execution_user)  # player_aliveから消す
         while self.global_object.players[execution_user].role.role_enum == ROLES.HUNTER:
-                self.broadcast_data(f"しかし {execution_user} はハンターでした.")
-                execution_user = self.global_object.players[execution_user].role.hunt()
-                
-                self.broadcast_data(f"ハンターの一撃により {execution_user} が犠牲となりました.")
-                #attacked_users.append(attacked_user)
-                self.delete_player(execution_user)  # player_aliveから消す
+            self.broadcast_data(f"しかし {execution_user} はハンターでした.")
+            execution_user = self.global_object.players[execution_user].role.hunt(
+            )
+
+            self.broadcast_data(f"ハンターの一撃により {execution_user} が犠牲となりました.")
+            # attacked_users.append(attacked_user)
+            self.delete_player(execution_user)  # player_aliveから消す
         self.global_object.voted_user = execution_user
         self.global_object.vote_list = []
 
@@ -178,20 +188,24 @@ class MasterThread(Thread):
         if attacked_user not in self.global_object.guard_list:
             self.broadcast_data(f"昨晩の犠牲者は {attacked_user} でした.")
             #attacked_users = []
-            #attacked_users.append(attacked_user)
+            # attacked_users.append(attacked_user)
             self.delete_player(attacked_user)  # player_aliveから消す
             while self.global_object.players[attacked_user].role.role_enum == ROLES.HUNTER:
                 self.broadcast_data(f"しかし {attacked_user} はハンターでした.")
-                attacked_user = self.global_object.players[attacked_user].role.hunt()
-                
+                attacked_user = self.global_object.players[attacked_user].role.hunt(
+                )
+
                 self.broadcast_data(f"ハンターの一撃により {attacked_user} が犠牲となりました.")
-                #attacked_users.append(attacked_user)
+                # attacked_users.append(attacked_user)
                 self.delete_player(attacked_user)  # player_aliveから消す
-            #for atk in attacked_users: self.delete_player(atk)  # player_aliveから消す
+            # for atk in attacked_users: self.delete_player(atk)  # player_aliveから消す
         else:
             self.broadcast_data(f"昨晩の犠牲者は いません でした.")
         self.global_object.attack_target = defaultdict(int)  # 初期化
         self.global_object.guard_target = []
+
+    def anounce_bread_result(self):
+        print(self.global_object.players_alive)
 
     def check_game_finish(self):
         # TODO: 後で変更

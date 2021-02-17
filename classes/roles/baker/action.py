@@ -70,8 +70,7 @@ class _MIDNIGHT(Action_AbstClass):
 
     def action(self):
         # 疑う対象の一覧を取得
-        # default_bread = [""]
-        b_dict = self.master_.bread_list()
+        b_dict = self.master_.bread_dict()
         # 選択肢をbroadcast
         b_dict_str = "\n".join([f"{k}: {v}" for k, v in b_dict.items()])
         self.player_.send_data("bake bread:\n" + b_dict_str + "\n")
