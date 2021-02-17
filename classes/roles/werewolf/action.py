@@ -1,5 +1,5 @@
 from classes.abst_classes.action_abst import Action_AbstClass
-from classes.util import TIME_OF_DAY
+from classes.util import TIME_OF_DAY, ROLES
 
 
 ######################################################################
@@ -16,6 +16,8 @@ class _ZERO(Action_AbstClass):
         self.master_ = master_
 
     def action(self):
+        # 誰を襲撃しようとしたかを初期化
+        self.player_.role.try_attack = None
         # 疑う対象の一覧を取得
         p_dict = self.master_.alive_players_dict()
         # 選択肢をbroadcast
@@ -34,12 +36,12 @@ class _ZERO(Action_AbstClass):
                 sys.exit(0)
             if data.isdigit() and (int(data) in p_dict.keys()):
                 suspected_player = p_dict[int(data)]
+                self.player_.role.try_attack = suspected_player # 誰を襲撃しようとした人物を保存
                 self.master_.submit_answer(submit_type="suspect", user=suspected_player) # 選択を登録
                 ok_send = self.player_.send_data(f"suspect {p_dict[int(data)]}\n")
                 return
             else:
                 ok_send = self.player_.send_data("please enter player number\nsuspect > ", with_CR=False)
-
 
 
 class _MORNING(Action_AbstClass):

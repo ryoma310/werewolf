@@ -25,6 +25,7 @@ class Werewolf_Role(Role_AbstClass):
         self.master_ = master_
         self.__actions = Action(self.player_, self.master_)
         self.__knowledges = Knowledge(self.player_, self.master_)
+        self.try_attack: str = None
 
 
     # 役職定数: abstractproperty implementation
