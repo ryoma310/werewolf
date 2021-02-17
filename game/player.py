@@ -5,7 +5,7 @@ import errno
 import threading
 from classes.abst_classes.role_abst import Role_AbstClass
 import classes.roles
-from classes.util import TIME_OF_DAY
+from classes.util import TIME_OF_DAY, WIN_CONDITION
 import time
 
 
@@ -240,8 +240,14 @@ class PlayerThread(Thread):
 
 
         if self.master_.global_object.finish_condition == self.role.win_condition:
+            if self.role.win_condition == WIN_CONDITION.HANGED_WIN_ALONE: # てるてるだけ別扱い
+                if self.master_.global_object.hanged_win_alone_player_name == self.player_name: # 自分の一人勝ち
+                    _ = self.send_data(f"おめでとうございます!勝ちました!\n")
+                else: # 自分以外のてるてる勝利
+                    _ = self.send_data(f"負けてしまいました.また次がんばりましょう.\n")
+            else: # 勝利
             _ = self.send_data(f"おめでとうございます!勝ちました!\n")
-        else:
+        else: # 負けた
             _ = self.send_data(f"負けてしまいました.また次がんばりましょう.\n")
 
         _ = self.send_data(f"thank you, {self.player_name}! see you!\n")
