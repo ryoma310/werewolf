@@ -41,7 +41,7 @@ class GlobalObject:
         # self.guard_user = None #佐古追加、騎士がサイコキラーを守ったかの判別 騎士クラスは未編集
         # self.forecast_user = None #佐古追加、占い師がサイコキラーを占ったかの判別 占い師クラスは未編集
         self.submit_lock = threading.RLock()
-        self.lovers_dict: Dict[str, [str]] = {}
+        self.lovers_dict: defaultdict = defaultdict(list)
 
 
 class MasterThread(Thread):
@@ -117,6 +117,14 @@ class MasterThread(Thread):
             elif submit_type == "bake":
                 b, p = user.split()
                 self.global_object.bake_dict[p] = b
+            elif submit_type == "cupit":
+                p1 = kwargs.get('cupit1', "")
+                p2 = kwargs.get('cupit2', "")
+                if p1 and p2: # 一応チェック
+                    self.lovers_dict[p1].append(p2)
+                    self.lovers_dict[p2].append(p1)
+
+
 
     def select_role(self):
         self.broadcast_data("役職一覧:\n")
@@ -185,6 +193,13 @@ class MasterThread(Thread):
         p_dict_str = "\n".join([f"{k}: {v}" for k, v in p_dict.items()])
         self.broadcast_data(
             "それでは, 投票したい人物を選んでください.\n選択肢:\n" + p_dict_str + "\n")
+
+    def announce_cupit(self):
+        if self.lovers_dict: # なんか登録されてたら..
+            for p_name, l_s in self.lovers_dict.items():
+                p = self.global_object.players[p_name]
+                l_s_str = ", ".join(l_s)
+                p.send_data(f"あなたは {l_s} と結ばれています.")
 
     def anounce_vote_result(self):
         top_user = statistics.multimode(
@@ -431,6 +446,8 @@ class MasterThread(Thread):
             self.global_object.event_wait_next.clear()
 
             self.wait_answer_start()
+
+            self.announce_cupit()
 
             # ゲーム終了までループ
             game_loop_flag = True
