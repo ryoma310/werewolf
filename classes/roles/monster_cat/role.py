@@ -35,7 +35,7 @@ class Monster_Cat_Role(Role_AbstClass):
     # 襲撃時に人狼道連れ
     def bit_attacked(self):
         p_dict = self.master_.alive_players_dict()
-        wolfs = [v for k, v in p_dict.items() if (self.master_.global_object.players[v].role.role_enum is ROLES.WEREWOLF)
+        wolfs = [v for v in p_dict.values() if (self.master_.global_object.players[v].role.role_enum is ROLES.WEREWOLF)
                  and self.master_.global_object.players[v].role.try_attack == self.player_.player_name]
         attacked_wolf = random.choice(wolfs)
         return attacked_wolf
@@ -43,7 +43,7 @@ class Monster_Cat_Role(Role_AbstClass):
     # 追放時にランダム道連れ
     def bit_explusion(self):
         p_dict = self.master_.alive_players_dict()
-        alive_users_name = [v for _, v in p_dict.items()]
+        alive_users_name = [v for v in p_dict.values()]
         bitted_player = random.choice(alive_users_name)
         return bitted_player
         """

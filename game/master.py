@@ -120,11 +120,9 @@ class MasterThread(Thread):
             elif submit_type == "cupit":
                 p1 = kwargs.get('cupit1', "")
                 p2 = kwargs.get('cupit2', "")
-                if p1 and p2: # 一応チェック
-                    self.lovers_dict[p1].append(p2)
-                    self.lovers_dict[p2].append(p1)
-
-
+                if p1 and p2:  # 一応チェック
+                    self.global_object.lovers_dict[p1].append(p2)
+                    self.global_object.lovers_dict[p2].append(p1)
 
     def select_role(self):
         self.broadcast_data("役職一覧:\n")
@@ -147,9 +145,9 @@ class MasterThread(Thread):
                     p for p in self.global_object.players_alive if p.role.role_enum == ROLES.IMMORAL]
                 for p in immorals_:
                     self.delete_player(p.player_name)  # 再起処理で消していく
-            if found in self.lovers_dict: # 恋人を消していく
-                for p_name in self.lovers_dict[found]:
-                    self.delete_player(p_name)  # 再起処理で消していく for 恋人
+            # if found in self.global_object.lovers_dict: # 恋人を消していく
+            #     for p_name in self.global_object.lovers_dict[found]:
+            #         self.delete_player(p_name)  # 再起処理で消していく for 恋人
             # TODO: ここで消す作業が生じたので、death_listをglobalに持っておいて、それを使って、最後にアナウンスをするのが良さそう.
             # TODO: アナウンス時のは重複を避けるため、setを取ってからする.
 
@@ -198,11 +196,12 @@ class MasterThread(Thread):
             "それでは, 投票したい人物を選んでください.\n選択肢:\n" + p_dict_str + "\n")
 
     def announce_cupit(self):
-        if self.lovers_dict: # なんか登録されてたら..
-            for p_name, l_s in self.lovers_dict.items():
-                p = self.global_object.players[p_name]
-                l_s_str = ", ".join(l_s)
-                p.send_data(f"あなたは {l_s} と結ばれています.")
+        pass
+        # if self.global_object.lovers_dict: # なんか登録されてたら..
+        #     for p_name, l_s in self.global_object.lovers_dict.items():
+        #         p = self.global_object.players[p_name]
+        #         l_s_str = ", ".join(l_s)
+        #         p.send_data(f"あなたは {l_s} と結ばれています.")
 
     def anounce_vote_result(self):
         top_user = statistics.multimode(
@@ -319,28 +318,34 @@ class MasterThread(Thread):
             if self.check_game_finish():
                 return
             # or self.global_object.players[execution_user].role.role_enum == ROLES.MONSTER_CAT:
-            while self.global_object.players[attacked_user].role.role_enum == ROLES.HUNTER or self.global_object.players[attacked_user].role.role_enum == ROLES.MONSTER_CAT or self.global_object.players[attacked_user].role.role_enum == ROLES.BLACK_CAT:
+            if self.global_object.players[attacked_user].role.role_enum == ROLES.MONSTER_CAT or self.global_object.players[attacked_user].role.role_enum == ROLES.BLACK_CAT:
+                attacked_user = self.global_object.players[attacked_user].role.bit_attacked(
+                )
+                self.broadcast_data(f"{attacked_user} が道連れになりました．")
+                dead_list.append(attacked_user)
+                self.delete_player(attacked_user)  # player_aliveから消す
+                # ゲーム終了条件を満たしているのか？
+                if self.check_game_finish():
+                    return
+            while self.global_object.players[attacked_user].role.role_enum == ROLES.HUNTER or self.global_object.players[attacked_user].role.role_enum == ROLES.MONSTER_CAT:
                 if self.global_object.players[attacked_user].role.role_enum == ROLES.HUNTER:
                     self.broadcast_data(f"しかし {attacked_user} はハンターでした.")
                     attacked_user = self.global_object.players[attacked_user].role.hunt(
                     )
-
                     self.broadcast_data(
                         f"ハンターの一撃により {attacked_user} が犠牲となりました.")
                     # attacked_users.append(attacked_user)
-                    dead_list.append(attacked_user)
                     self.delete_player(attacked_user)  # player_aliveから消す
                 else:
-                    attacked_user = self.global_object.players[attacked_user].role.bit_attacked(
+                    attacked_user = self.global_object.players[attacked_user].role.bit_explusion(
                     )
                     self.broadcast_data(f"{attacked_user} が道連れになりました．")
-                    dead_list.append(attacked_user)
-                    self.delete_player(attacked_user)  # player_aliveから消す
+                    self.delete_player(attacked_user)
                 # ゲーム終了条件を満たしているのか？
                 if self.check_game_finish():
                     return
             # for atk in attacked_users: self.delete_player(atk)  # player_aliveから消す
-            # if self.global_object.players[execution_user].role.role_enum == ROLES.MONSTER_CAT:
+            # if self.global_object.players[attacked_user].role.role_enum == ROLES.MONSTER_CAT:
             #     pass
             # bit_attacked
         if len(dead_list) == 0:

@@ -37,9 +37,6 @@ class Psycho_Killer_Role(Role_AbstClass):
     # 人狼が襲撃した際に返り討ちにする
     def revenge_wolf(self):
         p_dict = self.master_.alive_players_dict()
-        for v in p_dict.values():
-            if (self.master_.global_object.players[v].role.role_enum is ROLES.WEREWOLF):
-                print(v, self.master_.global_object.players[v].role.try_attack)
         wolfs = [v for v in p_dict.values() if (self.master_.global_object.players[v].role.role_enum is ROLES.WEREWOLF)
                  and (self.master_.global_object.players[v].role.try_attack == self.player_.player_name)]
         attacked_wolf = random.choice(wolfs)
