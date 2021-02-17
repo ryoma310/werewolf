@@ -260,7 +260,7 @@ class MasterThread(Thread):
             print(alived_baker_bread)
             if len(alived_baker_bread) > 0:
                 self.broadcast_data(
-                    f"今日は {random.choice(alived_baker_bread)} が 皆さんの手元に届けられました！")
+                    f"今日は パン屋の方から {random.choice(alived_baker_bread)} が 皆さんの手元に届けられました！")
             else:
                 self.broadcast_data(f"パンは 届きませんでした…")
 
