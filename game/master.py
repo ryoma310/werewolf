@@ -152,13 +152,34 @@ class MasterThread(Thread):
         execution_user = random.choice(top_user)  # 重複があるとランダムに1人
         self.broadcast_data(f"投票の結果、{execution_user} に決定しました")
         self.delete_player(execution_user)  # player_aliveから消す
-        while self.global_object.players[execution_user].role.role_enum == ROLES.HUNTER:
+        # ゲーム終了条件を満たしているのか？
+        if self.check_game_finish(): return
+        while self.global_object.players[execution_user].role.role_enum == ROLES.HUNTER or self.global_object.players[execution_user].role.role_enum == ROLES.MONSTER_CAT:
+            if self.global_object.players[execution_user].role.role_enum == ROLES.HUNTER:
                 self.broadcast_data(f"しかし {execution_user} はハンターでした.")
                 execution_user = self.global_object.players[execution_user].role.hunt()
-                
                 self.broadcast_data(f"ハンターの一撃により {execution_user} が犠牲となりました.")
                 #attacked_users.append(attacked_user)
                 self.delete_player(execution_user)  # player_aliveから消す
+            else:
+                execution_user = self.global_object.players[execution_user].role.bit_explusion()
+                self.broadcast_data(f"{execution_user} が道連れになりました．")
+                self.delete_player(execution_user)
+            # ゲーム終了条件を満たしているのか？
+            if self.check_game_finish(): return
+        """
+        if self.global_object.players[execution_user].role.role_enum == ROLES.MONSTER_CAT:
+            execution_user = self.global_object.players[attacked_user].role.bit_explusion()
+            self.broadcast_data(f"{execution_user} が道連れになりました．")
+            self.delete_player(execution_user)  # player_aliveから消す
+            if self.check_game_finish(): return
+            while self.global_object.players[execution_user].role.role_enum == ROLES.HUNTER:
+                self.broadcast_data(f"しかし {execution_user} はハンターでした.")
+                execution_user = self.global_object.players[execution_user].role.hunt()
+                self.broadcast_data(f"ハンターの一撃により {execution_user} が犠牲となりました.")
+                self.delete_player(execution_user)
+                if self.check_game_finish(): return
+        """
         self.global_object.voted_user = execution_user
         self.global_object.vote_list = []
 
@@ -180,14 +201,25 @@ class MasterThread(Thread):
             #attacked_users = []
             #attacked_users.append(attacked_user)
             self.delete_player(attacked_user)  # player_aliveから消す
-            while self.global_object.players[attacked_user].role.role_enum == ROLES.HUNTER:
-                self.broadcast_data(f"しかし {attacked_user} はハンターでした.")
-                attacked_user = self.global_object.players[attacked_user].role.hunt()
+            # ゲーム終了条件を満たしているのか？
+            if self.check_game_finish(): return
+            while self.global_object.players[attacked_user].role.role_enum == ROLES.HUNTER or self.global_object.players[execution_user].role.role_enum == ROLES.MONSTER_CAT:
+                if self.global_object.players[attacked_user].role.role_enum == ROLES.HUNTER:
+                    self.broadcast_data(f"しかし {attacked_user} はハンターでした.")
+                    attacked_user = self.global_object.players[attacked_user].role.hunt()
                 
-                self.broadcast_data(f"ハンターの一撃により {attacked_user} が犠牲となりました.")
-                #attacked_users.append(attacked_user)
-                self.delete_player(attacked_user)  # player_aliveから消す
+                    self.broadcast_data(f"ハンターの一撃により {attacked_user} が犠牲となりました.")
+                    #attacked_users.append(attacked_user)
+                    self.delete_player(attacked_user)  # player_aliveから消す
+                else:
+                    attacked_user = self.global_object.players[attacked_user].role.bit_attacked()
+                    self.broadcast_data(f"{attacked_user} が道連れになりました．")
+                    self.delete_player(attacked_user)  # player_aliveから消す
+                # ゲーム終了条件を満たしているのか？
+                if self.check_game_finish(): return
             #for atk in attacked_users: self.delete_player(atk)  # player_aliveから消す
+            if self.global_object.players[execution_user].role.role_enum == ROLES.MONSTER_CAT:
+            bit_attacked
         else:
             self.broadcast_data(f"昨晩の犠牲者は いません でした.")
         self.global_object.attack_target = defaultdict(int)  # 初期化
