@@ -18,6 +18,7 @@ functions: (といいつつannotationでpropertyなものも)
     knowledges(TIME_OF_DAY) -> str:     朝,昼,晩に得られる知識
 """
 
+
 class Monster_Cat_Role(Role_AbstClass):
     def __init__(self, name, player_, master_):
         super().__init__(name)
@@ -34,7 +35,8 @@ class Monster_Cat_Role(Role_AbstClass):
     # 襲撃時に人狼道連れ
     def bit_attacked(self):
         p_dict = self.master_.alive_players_dict()
-        wolfs = [k for k, v in p_dict.items() if (v.role.role_enum is ROLES.WEREWOLF) and v.role.try_attack == self.player_.player_name]
+        wolfs = [k for k, v in p_dict.items() if (v.role.role_enum is ROLES.WEREWOLF)
+                 and v.role.try_attack == self.player_.player_name]
         attacked_wolf = random.choice(wolfs)
         return attacked_wolf
 
@@ -68,23 +70,22 @@ class Monster_Cat_Role(Role_AbstClass):
     # 役職定数: abstractproperty implementation
     @property
     def role_enum(self):
-        return ROLES.MONSTER_CAT # ここを変更
-
+        return ROLES.MONSTER_CAT  # ここを変更
 
     # 勝利条件: abstractproperty implementation
+
     @property
     def win_condition(self) -> WIN_CONDITION:
-        return WIN_CONDITION.NO_WOLFS # ここを変更
-
-
+        return WIN_CONDITION.NO_WOLFS  # ここを変更
 
     ###################### ここから下は共通 #############################
     # 各役割の行動: abstractproperty implementation
+
     def take_action(self, time_of_day: TIME_OF_DAY):
         # action は messageとselectを実装
         self.__actions.action_dict[time_of_day].action()
 
-
     # 各役割の知識用: abstractproperty implementation
+
     def get_knowledge(self, time_of_day: TIME_OF_DAY):
         self.__knowledges.knowledge_dict[time_of_day].knowledge()
