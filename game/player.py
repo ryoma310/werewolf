@@ -239,6 +239,10 @@ class PlayerThread(Thread):
             ########################
 
 
+        if self.master_.global_object.finish_condition == self.role.win_condition:
+            _ = self.send_data(f"おめでとうございます!勝ちました!\n")
+        else:
+            _ = self.send_data(f"負けてしまいました.また次がんばりましょう.\n")
 
         _ = self.send_data(f"thank you, {self.player_name}! see you!\n")
 

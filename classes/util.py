@@ -9,6 +9,8 @@ class TIME_OF_DAY(Flag):
 class WIN_CONDITION(Flag):
     NO_WOLFS = auto()
     WOLF_EQ_OR_MORE_THAN_CITIZEN = auto()
+    NO_WOLFS_BUT_THIRD_FORCE = auto()
+    WOLF_EQ_OR_MORE_THAN_CITIZEN_BUT_THIRD_FORCE = auto()
 
 
 class classproperty(object):
@@ -52,11 +54,11 @@ class ROLES(Enum):
 
     @classproperty
     def WEREWOLF_SIDE(cls):
-      return cls.WEREWOLF
+      return (cls.WEREWOLF,)
 
     @classproperty
     def THIRD_FORCE_SIDE(cls):
-      return cls.FOX_SPIRIT
+      return (cls.FOX_SPIRIT,)
 
     @classproperty
     def ALL_ROLES(cls):
