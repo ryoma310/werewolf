@@ -2,7 +2,7 @@
 # sys.path.append("../../..")
 
 from classes.abst_classes.knowledge_abst import Knowledge_AbstClass
-from classes.util import TIME_OF_DAY
+from classes.util import TIME_OF_DAY, ROLES
 
 ######################################################################
 # ここから下をいじる
