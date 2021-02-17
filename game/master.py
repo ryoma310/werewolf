@@ -34,14 +34,16 @@ class GlobalObject:
         self.bake_dict: defaultdict = defaultdict(str)
         self.attack_target: defaultdict = defaultdict(int)
         self.fortune_dict: defaultdict = defaultdict(str)
+        self.magician_dict: defaultdict = defaultdict(str)
         self.finish_condition: WIN_CONDITION = None
         self.check_username_lock = threading.RLock()
         self.voted_user = None
-        self.fortune_dict: defaultdict = defaultdict(str)
+        # self.fortune_dict: defaultdict = defaultdict(str)
         # self.guard_user = None #佐古追加、騎士がサイコキラーを守ったかの判別 騎士クラスは未編集
         # self.forecast_user = None #佐古追加、占い師がサイコキラーを占ったかの判別 占い師クラスは未編集
         self.submit_lock = threading.RLock()
         self.lovers_dict: defaultdict = defaultdict(list)
+        self.dead_list_for_magician: [str] = []
 
 
 class MasterThread(Thread):
@@ -123,6 +125,9 @@ class MasterThread(Thread):
                 if p1 and p2:  # 一応チェック
                     self.global_object.lovers_dict[p1].append(p2)
                     self.global_object.lovers_dict[p2].append(p1)
+            elif submit_type == "magician":
+                p, m = user.split()
+                self.global_object.magician_dict[p] = m
 
     def select_role(self):
         self.broadcast_data("役職一覧:\n")
@@ -170,10 +175,26 @@ class MasterThread(Thread):
                          "フランスパン🥖"] + random.sample(random_bread, 2)
         return {i: p for i, p in enumerate(default_bread)}
 
-    def swich_role(self, target_player: PlayerThread, target_role: ROLES):
+    def switch_role(self, target_player: PlayerThread, target_role: ROLES):
         new_role = getattr(classes.roles, target_role.name.lower()).player_instance(
             target_player.player_name, target_player, self)
         target_player.role = new_role
+
+    def magician_swtich_phase(self):
+        dead_list = []
+        for magician, target in self.global_object.magician_dict.items():
+            self.switch_role(self.global_object.players[magician], self.global_object.players[target].role.role_enum)
+            self.global_object.players[magician].send_data(
+                f"{target} の役職は, \"{self.global_object.players[target].role.role_name}\" でした.")
+            self.global_object.players[magician].send_data(
+                f"よってあなたの役職は, \"{self.global_object.players[target].role.role_name}\" になります.")
+
+        for magician, target in self.global_object.magician_dict.items():
+            werewolfs_num = len([p.player_name for p in self.global_object.players.values() if p.role.role_enum is ROLES.WEREWOLF])
+            if self.global_object.players[target].role.role_enum == ROLES.WEREWOLF and werewolfs_num >= 2:
+                self.global_object.dead_list_for_magician.append(target)
+            self.switch_role(self.global_object.players[target], ROLES.CITIZEN)
+            # self.global_object.players[target].send_data(f"あなたは魔術師に役職を奪われたため \"市民\" になりました.")
 
     def check_fox_immoral(self):
         fox_ = [
@@ -182,7 +203,7 @@ class MasterThread(Thread):
             p for p in self.global_object.players_alive if p.role.role_enum is ROLES.IMMORAL]
         if (not fox_) and (immoral_):  # foxがいなくて、immoralがいる
             to_fox_user = random.choice(immoral_)
-            self.swich_role(to_fox_user, ROLES.FOX_SPIRIT)
+            self.switch_role(to_fox_user, ROLES.FOX_SPIRIT)
             to_fox_user.send_data("あなたは背徳者でしたが、妖狐がいなかったため、妖狐になってしまいました.")
 
     def vote_broadcast(self):
@@ -254,6 +275,7 @@ class MasterThread(Thread):
 
     def anounce_attack_result(self):
         dead_list = []
+
         # 占い師が妖狐を占ったかの確認
         fox_fortuned_taller = [v for v in self.global_object.fortune_dict.values(
         ) if self.global_object.players[v].role.role_enum == ROLES.FOX_SPIRIT]
@@ -298,7 +320,13 @@ class MasterThread(Thread):
 
         # ここで、騎士の守りをチェック
         guard_list = self.global_object.guard_dict.values()
-        if (attacked_user not in guard_list) and (self.global_object.players[attacked_user].role.role_enum is not ROLES.FOX_SPIRIT) and (self.global_object.players[attacked_user].role.role_enum is not ROLES.PSYCHO_KILLER):
+        stealed_wolf = True
+        # マジシャンが人狼を奪って, 襲撃が無効化
+        for dead_person in self.global_object.dead_list_for_magician:
+            dead_list.append(dead_person)  # 元人狼死亡
+            stealed_wolf = False
+        self.global_object.dead_list_for_magician = []
+        if (attacked_user not in guard_list) and (self.global_object.players[attacked_user].role.role_enum is not ROLES.FOX_SPIRIT) and (self.global_object.players[attacked_user].role.role_enum is not ROLES.PSYCHO_KILLER) and stealed_wolf:
             dead_list.append(attacked_user)
             if self.global_object.players[attacked_user].role.role_enum == ROLES.MONSTER_CAT or self.global_object.players[attacked_user].role.role_enum == ROLES.BLACK_CAT:
                 attacked_user = self.global_object.players[attacked_user].role.bit_attacked(
@@ -451,6 +479,8 @@ class MasterThread(Thread):
 
             self.announce_cupit()
 
+            self.magician_swtich_phase()
+
             # ゲーム終了までループ
             game_loop_flag = True
             while game_loop_flag:
@@ -504,6 +534,7 @@ class MasterThread(Thread):
                 self.global_object.attack_target = defaultdict(
                     int)  # 人狼襲撃用配列の初期化
                 self.global_object.fortune_dict = {}
+                self.global_object.magician_dict = {}
                 self.global_object.event_wait_next.set()
                 self.global_object.event_wait_next.clear()
 
