@@ -43,7 +43,7 @@ class Monster_Cat_Role(Role_AbstClass):
     # 追放時にランダム道連れ
     def bit_explusion(self):
         p_dict = self.master_.alive_players_dict()
-        alive_users_name = [k for k, _ in p_dict.items()]
+        alive_users_name = [v for _, v in p_dict.items()]
         bitted_player = random.choice(alive_users_name)
         return bitted_player
         """

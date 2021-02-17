@@ -161,20 +161,20 @@ class MasterThread(Thread):
                          "フランスパン🥖"] + random.sample(random_bread, 2)
         return {i: p for i, p in enumerate(default_bread)}
 
-
     def swich_role(self, target_player: PlayerThread, target_role: ROLES):
-        new_role =  getattr(classes.roles, target_role.name.lower()).player_instance(target_player.player_name, target_player, self)
+        new_role = getattr(classes.roles, target_role.name.lower()).player_instance(
+            target_player.player_name, target_player, self)
         target_player.role = new_role
 
-    
     def check_fox_immoral(self):
-        fox_ = [p for p in self.global_object.players_alive if p.role.role_enum is ROLES.FOX_SPIRIT]
-        immoral_ = [p for p in self.global_object.players_alive if p.role.role_enum is ROLES.IMMORAL]
-        if (not fox_) and (immoral_): # foxがいなくて、immoralがいる
+        fox_ = [
+            p for p in self.global_object.players_alive if p.role.role_enum is ROLES.FOX_SPIRIT]
+        immoral_ = [
+            p for p in self.global_object.players_alive if p.role.role_enum is ROLES.IMMORAL]
+        if (not fox_) and (immoral_):  # foxがいなくて、immoralがいる
             to_fox_user = random.choice(immoral_)
             self.swich_role(to_fox_user, ROLES.FOX_SPIRIT)
             to_fox_user.send_data("あなたは背徳者でしたが、妖狐がいなかったため、妖狐になってしまいました.")
-
 
     def vote_broadcast(self):
         self.global_object.vote_list = []  # 一応初期化
@@ -325,7 +325,7 @@ class MasterThread(Thread):
             # if self.global_object.players[execution_user].role.role_enum == ROLES.MONSTER_CAT:
             #     pass
             # bit_attacked
-        if dead_list is []:
+        if len(dead_list) == 0:
             # 人狼がサイコキラーを襲撃せず、騎士の守り先を襲撃した場合
             self.broadcast_data(f"昨晩の犠牲者は いません でした.")
         self.global_object.attack_target = defaultdict(int)  # 初期化

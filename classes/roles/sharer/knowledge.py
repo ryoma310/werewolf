@@ -47,7 +47,7 @@ class _MIDNIGHT(Knowledge_AbstClass):
     def knowledge(self):
         # 魔術師によって他の共有者が奪われた場合、新しい共有者は誰なのかを通知
         sharers = [p.player_name for p in self.master_.global_object.players.values() if p.role.role_enum is ROLES.SHARER]
-        self.player_.send_data(f"knowledge: このゲームにおける共有者は {', '.join(sharers)} の{len(shares)}人です.\n")
+        self.player_.send_data(f"knowledge: このゲームにおける共有者は {', '.join(sharers)} の{len(sharers)}人です.\n")
         #self.player_.send_data("knowledge: No info provided to your role\n")
 
 
