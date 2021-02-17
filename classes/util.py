@@ -48,9 +48,13 @@ class ROLES(Enum):
 
     @classproperty
     def CITIZEN_SIDE(cls):
-        return cls.CITIZEN, cls.FORTUNE_TELLER, cls.KNIGHT # CITIZEN in CITIZEN_SIDE => True
+        return (r for r in ROLES if r not in [cls.WEREWOLF, cls.FOX_SPIRIT]) # CITIZEN in CITIZEN_SIDE => True
 
     @classproperty
     def WEREWOLF_SIDE(cls):
-      return cls.WEREWOLF, cls.PSYCHO
+      return cls.WEREWOLF
+
+    @classproperty
+    def THIRD_FORCE_SIDE(cls):
+      return cls.FOX_SPIRIT
 
