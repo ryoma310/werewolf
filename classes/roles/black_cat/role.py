@@ -34,7 +34,7 @@ class Black_Cat_Role(Role_AbstClass):
     # 襲撃された際に実行
     def bit_attacked(self):
         p_dict = self.master_.alive_players_dict()
-        not_wolfs = [k for k, v in p_dict.items() if (v.role.role_enum is not ROLES.WEREWOLF) ]
+        not_wolfs = [k for k, v in p_dict.items() if (self.master_.global_object.players[v].role.role_enum is not ROLES.WEREWOLF) ]
         attacked_citizen = random.choice(not_wolfs)
         return attacked_citizen
 
