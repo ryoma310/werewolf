@@ -86,6 +86,7 @@ class _MIDNIGHT(Action_AbstClass):
             # TODO: 以降修正
             if data.isdigit() and (int(data) in p_dict.keys()):
                 told_person_name = p_dict[int(data)]
+                self.master_.global_object.fortune_dict[self.player_.player_name] = told_person_name
                 role_ = self.master_.global_object.players[told_person_name].role.role_enum
                 side_list_ = ["werewolf", "villager"]
                 if role_ is ROLES.WEREWOLF:

@@ -91,7 +91,7 @@ class _MIDNIGHT(Action_AbstClass):
             if data.isdigit() and (int(data) in p_dict.keys()):
                 guard_player = p_dict[int(data)]
                 self.master_.submit_answer(
-                    submit_type="guard", user=guard_player)  # 選択を登録
+                    submit_type="guard", user=guard_player + " " + self.player_.player_name)  # 選択を登録
                 ok_send = self.player_.send_data(
                     f"guard {p_dict[int(data)]}\n")
                 return
