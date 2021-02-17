@@ -37,6 +37,7 @@ class GlobalObject:
         self.finish_condition: WIN_CONDITION = None
         self.check_username_lock = threading.RLock()
         self.voted_user = None
+        self.submit_lock = threading.RLock()
 
 
 class MasterThread(Thread):
@@ -98,19 +99,20 @@ class MasterThread(Thread):
             self.global_object.event_wait_answer.set()
 
     def submit_answer(self, submit_type, user, **kwargs):
-        if submit_type == "vote":
-            self.global_object.vote_list.append(user)
-        elif submit_type == "suspect":
-            self.global_object.suspect_list.append(user)
-        elif submit_type == "attack":
-            priority = kwargs.get('priority', 1)
-            self.global_object.attack_target[user] += priority
-        elif submit_type == "guard":
-            g, p = user.split()
-            self.global_object.guard_dict[p] = g
-        elif submit_type == "bake":
-            b, p = user.split()
-            self.global_object.bake_dict[p] = b
+        with self.global_object.submit_lock:
+            if submit_type == "vote":
+                self.global_object.vote_list.append(user)
+            elif submit_type == "suspect":
+                self.global_object.suspect_list.append(user)
+            elif submit_type == "attack":
+                priority = kwargs.get('priority', 1)
+                self.global_object.attack_target[user] += priority
+            elif submit_type == "guard":
+                g, p = user.split()
+                self.global_object.guard_dict[p] = g
+            elif submit_type == "bake":
+                b, p = user.split()
+                self.global_object.bake_dict[p] = b
 
     def select_role(self):
         self.broadcast_data("役職一覧:\n")
