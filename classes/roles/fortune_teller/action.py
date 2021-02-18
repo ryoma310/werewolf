@@ -54,13 +54,13 @@ class _MIDNIGHT(Action_AbstClass):
                 break
         # 選択肢をbroadcast
         p_dict_str = "\n".join([f"{k}: {v}" for k, v in p_dict.items()])
-        self.player_.send_data("tell a someone's side:\n" + p_dict_str + "\n")
+        self.player_.send_data("今夜占う人物を一人選んでください:\n" + p_dict_str + "\n")
 
         # 占う
         p_dict = self.master_.alive_players_dict()
         # 問い合わせ
         ok_send = self.player_.send_data(
-            "tell a someone's side > ", with_CR=False)
+            "占う人物 > ", with_CR=False)
         while True:
             if not ok_send:
                 sys.exit(0)
@@ -72,7 +72,7 @@ class _MIDNIGHT(Action_AbstClass):
                 told_person_name = p_dict[int(data)]
                 self.master_.global_object.fortune_dict[self.player_.player_name] = told_person_name
                 role_ = self.master_.global_object.players[told_person_name].role.role_enum
-                side_list_ = ["werewolf", "villager"]
+                side_list_ = ["人狼", "市民"]
                 if role_ is ROLES.WEREWOLF:
                     # 黒
                     side_ = 0
@@ -80,13 +80,13 @@ class _MIDNIGHT(Action_AbstClass):
                     # 白
                     side_ = 1
                 ok_send = self.player_.send_data(
-                    f"tell {told_person_name}'s side\n")
+                    f"\n--- 占い結果 ---\n")
                 ok_send = self.player_.send_data(
-                    f"{told_person_name} is {side_list_[side_]}\n")
+                    f"{told_person_name} は \"{side_list_[side_]}\" です.\n")
                 return
             else:
                 ok_send = self.player_.send_data(
-                    "please enter player number\ntell a someone's side > ", with_CR=False)
+                    "占いた人物の番号(index)を入力してください.\n占う人物 > ", with_CR=False)
 
 
 # ここまで

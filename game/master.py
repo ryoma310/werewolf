@@ -7,7 +7,7 @@ from collections import defaultdict
 
 from .player import PlayerThread
 import classes.roles
-from classes.util import WIN_STATUS, WIN_CONDITION, FINISH_TRIGER, ROLES, HANGED_WIN_DATE
+from classes.util import WIN_CONDITION, ROLES, HANGED_WIN_DATE
 
 
 class GlobalObject:
@@ -36,7 +36,7 @@ class GlobalObject:
         self.fortune_dict: defaultdict = defaultdict(str)
         self.magician_dict: defaultdict = defaultdict(str)
         self.cupid_dict: defaultdict = defaultdict(str)
-        self.finish_condition: WIN_STATUS = WIN_STATUS()
+        self.finish_condition: WIN_CONDITION = None
         self.check_username_lock = threading.RLock()
         self.voted_user = None
         self.magic_target = None
@@ -45,6 +45,7 @@ class GlobalObject:
         # self.forecast_user = None #佐古追加、占い師がサイコキラーを占ったかの判別 占い師クラスは未編集
         self.submit_lock = threading.RLock()
         self.lovers_dict: defaultdict = defaultdict(list)
+        self.hanged_win_alone_player_name: str = None
         self.dead_list_for_magician: [str] = []
         self.dead_log: [str] = []
 
@@ -128,7 +129,6 @@ class MasterThread(Thread):
                 if p1 and p2:  # 一応チェック
                     self.global_object.lovers_dict[p1].append(p2)
                     self.global_object.lovers_dict[p2].append(p1)
-
                 self.global_object.cupid_dict[user] = [p1, p2]
             elif submit_type == "magician":
                 p, m = user.split()
@@ -178,6 +178,8 @@ class MasterThread(Thread):
     def magician_swtich_phase(self):
         dead_list = []
         magician_list = [k for k, v in self.global_object.magician_dict.items()]  # 魔術師のリストをとってくる
+        if len(magician_list) == 0:
+            return
         magic_success_man = random.choice(magician_list)  # 魔術師の中から抽選
         for magician, target in self.global_object.magician_dict.items():
             if magician == magic_success_man:
@@ -196,8 +198,7 @@ class MasterThread(Thread):
 
         for magician, target in self.global_object.magician_dict.items():
             if magician == magic_success_man:
-                werewolfs_num = len([p.player_name for p in self.global_object.players.values(
-                ) if p.role.role_enum is ROLES.WEREWOLF])
+                werewolfs_num = len([p.player_name for p in self.global_object.players.values() if p.role.role_enum is ROLES.WEREWOLF])
                 # 人狼が複数人いる場合, 魔術師が人狼を奪うと, その人狼は市民になって死ぬ
                 if self.global_object.players[target].role.role_enum == ROLES.WEREWOLF and werewolfs_num >= 2:
                     self.global_object.dead_list_for_magician.append(target)
@@ -323,8 +324,10 @@ class MasterThread(Thread):
         self.broadcast_data(f"投票の結果、{execution_user} に決定しました")
         self.global_object.dead_log.append(
             f"{self.global_object.day}日目:投票により、{execution_user}が処刑")
-        if (self.global_object.players[execution_user].role.role_enum == ROLES.HANGED) and (self.global_object.day >= HANGED_WIN_DATE.hanged_win_date(self.global_object.player_num)):
-            self.global_object.win_condition.win_players_hanged.append(execution_user) # 勝ったリストに追加
+        if (self.global_object.players[execution_user].role.role_enum == ROLES.HANGED) and (self.global_object.day >= HANGED_WIN_DATE.hanged_win_date(self.global_object.day)):
+            self.broadcast_data(
+                f"が、しかし、{execution_user} は てるてる でした.\n{HANGED_WIN_DATE.hanged_win_date()}日以降のため、{execution_user}の勝利となります.")
+            return  # 呼び出し元直後の check_game_finish で終了するはず
 
         self.kill_chain([execution_user])
 
@@ -370,7 +373,7 @@ class MasterThread(Thread):
                     dead_list.append(k)
                     self.global_object.dead_log.append(
                         f"{self.global_object.day}日目:キューピッド{k}がサイコキラー{p1}と{p2}を恋人にし、{k}が死亡")
-        self.global_object.cupid_dict = defaultdict(str) # 初夜でcupid_dict初期化されるけど..?
+        self.global_object.cupid_dict = defaultdict(str)
 
         # 騎士がサイコキラーを守っていたかどうか
         for k, v in self.global_object.guard_dict.items():
@@ -454,15 +457,6 @@ class MasterThread(Thread):
                 self.broadcast_data(f"パンは 届きませんでした…")
 
         # print(self.global_object.players_alive)
-    
-
-    def check_cuples_alive(self):
-        p_set = set([p.player_name for p in self.global_object.players_alive])
-        alive_cuples = dict()
-        for c, l in self.global_object.cupid_dict.items():
-            if set(l) <= p_set:
-                alive_cuples[c] = l
-        return alive_cuples # returns alive {"cupid": [p1,p2], "cupid2": [p3,p4], }
 
     def announce_magician_result(self):
         target = self.global_object.magic_target
@@ -470,117 +464,50 @@ class MasterThread(Thread):
             self.global_object.players[target].send_data("あなたは役職を奪われた為, \"市民\" になりました.\n")
 
 
-    def check_game_finish(self):
+    def check_game_finish(self, hanged_win_alone=None):
+        if hanged_win_alone:  # てるてる一人勝ち
+            self.global_object.hanged_win_alone_player_name = hanged_win_alone
+            self.global_object.finish_conditio = WIN_CONDITION.HANGED_WIN_ALONE
+            return True
+
         wolf_side_ = [
-            p for p in self.global_object.players_alive if p.role.role_enum in ROLES.WEREWOLF_SIDE] # only WOLF
+            p for p in self.global_object.players_alive if p.role.role_enum in ROLES.WEREWOLF_SIDE]
         citizen_side_ = [
-            p for p in self.global_object.players_alive if p.role.role_enum in ROLES.CITIZEN_SIDE] # CITIZEN, FORTUNE_TELLER, etc...
+            p for p in self.global_object.players_alive if p.role.role_enum in ROLES.CITIZEN_SIDE]
         third_force_ = [
-            p for p in self.global_object.players_alive if p.role.role_enum in ROLES.THIRD_FORCE_SIDE] # only FOX_SPIRIT
-        alive_cuples = self.check_cuples_alive() # returns alive {"cupid": [p1,p2], "cupid2": [p3,p4], }
-
-
-        # このあと、勝者をリストかなんかに入れておいて、後で全体/個人アナウンスで利用
-        # self.global_object.finish_condition.win_playersに入れる
+            p for p in self.global_object.players_alive if p.role.role_enum in ROLES.THIRD_FORCE_SIDE]
         if len(wolf_side_) == 0:  # 全ての人狼が追放
-            self.global_object.finish_condition.finish_triger = FINISH_TRIGER.NO_WOLFS
-            if alive_cuples: # 恋人いた -> 生きている [(キューピット,恋人1,恋人2), ..] の勝利
-                self.global_object.finish_condition.finish_type = WIN_CONDITION.CUPIT_CUPLE
-                # 勝者を記録
-                for k, v in alive_cuples.items():
-                    self.global_object.finish_condition.win_players.append(k)
-                    self.global_object.finish_condition.win_players.append(v[0])
-                    self.global_object.finish_condition.win_players.append(v[1])
-            elif third_force_:  # 妖狐いた -> 妖狐,背徳者の勝利
-                self.global_object.finish_condition.finish_type = WIN_CONDITION.THIRD_FORCE
-                winners_ = [p.player_name for p in self.global_object.players.values() if p.role.role_enum in ROLES.THIRD_FORCE_SIDE_WINNER]
-                self.global_object.finish_condition.win_players = winners_
-            else:  # 恋人も妖狐いない
-                self.global_object.finish_condition.finish_type = WIN_CONDITION.NO_WOLFS
-                winners_ = [p.player_name for p in self.global_object.players.values() if p.role.role_enum in ROLES.CITIZEN_SIDE_WINNER]
-                self.global_object.finish_condition.win_players = winners_
-
-            return True
-
-        elif len(wolf_side_) >= len(citizen_side_):  # 市民が人狼以下
-            self.global_object.finish_condition.finish_triger = FINISH_TRIGER.WOLF_EQ_OR_MORE_THAN_CITIZEN
-            if alive_cuples: # 恋人いた -> 生きている [(キューピット,恋人1,恋人2), ..] の勝利
-                self.global_object.finish_condition.finish_type = WIN_CONDITION.CUPIT_CUPLE
-                # 勝者を記録
-                for k, v in alive_cuples.items():
-                    self.global_object.finish_condition.win_players.append(k)
-                    self.global_object.finish_condition.win_players.append(v[0])
-                    self.global_object.finish_condition.win_players.append(v[1])
-            elif third_force_:  # 妖狐いた -> 妖狐,背徳者の勝利
-                self.global_object.finish_condition.finish_type = WIN_CONDITION.THIRD_FORCE
-                winners_ = [p.player_name for p in self.global_object.players.values() if p.role.role_enum in ROLES.THIRD_FORCE_SIDE_WINNER]
-                self.global_object.finish_condition.win_players = winners_
+            if third_force_:  # 妖狐いた
+                self.global_object.finish_condition = WIN_CONDITION.NO_WOLFS_BUT_THIRD_FORCE
             else:  # 妖狐いない
-                self.global_object.finish_condition.finish_type = WIN_CONDITION.WOLF_EQ_OR_MORE_THAN_CITIZEN
-                winners_ = [p.player_name for p in self.global_object.players.values() if p.role.role_enum in ROLES.WEREWOLF_SIDE_WINNER]
-                self.global_object.finish_condition.win_players = winners_
+                self.global_object.finish_condition = WIN_CONDITION.NO_WOLFS
             return True
-
+        elif len(wolf_side_) >= len(citizen_side_):  # 市民が人狼以下
+            if third_force_:  # 妖狐いた
+                self.global_object.finish_condition = WIN_CONDITION.WOLF_EQ_OR_MORE_THAN_CITIZEN_BUT_THIRD_FORCE
+            else:  # 妖狐いない
+                self.global_object.finish_condition = WIN_CONDITION.WOLF_EQ_OR_MORE_THAN_CITIZEN
+            return True
         return False
 
     def finish_statement(self):
-        # 終了トリガのアナウンス
-        if self.global_object.finish_condition.finish_triger == FINISH_TRIGER.NO_WOLFS:
-            self.broadcast_data("この村から全ての人狼が追放されました\n")
-        elif self.global_object.finish_condition.finish_triger == FINISH_TRIGER.NO_WOLFS:
-            self.broadcast_data("この村の市民と人狼が同数となりました\n")
-        else:
-            pass # 上のどっちかのはず.
+        if self.global_object.finish_condition == WIN_CONDITION.NO_WOLFS:
+            self.broadcast_data("この村から全ての人狼が追放されました")
+            self.broadcast_data("よって、市民陣営の勝利です！\n")
 
-        # 勝者の報告
-        # 市民勝利
-        if self.global_object.finish_condition.finish_type == WIN_CONDITION.NO_WOLFS:
-            self.broadcast_data("よって、市民陣営の勝利です!\n")
-        # 人狼勝利
-        elif self.global_object.finish_condition.finish_type == WIN_CONDITION.WOLF_EQ_OR_MORE_THAN_CITIZEN:
-            self.broadcast_data("よって、人狼陣営の勝利です!\n")
-        # 妖狐の勝利
-        elif self.global_object.finish_condition.finish_type == WIN_CONDITION.THIRD_FORCE:
-            if self.global_object.finish_condition.finish_triger == FINISH_TRIGER.NO_WOLFS:
-                self.broadcast_data("市民陣営の勝利...かと思われましたが、")
-            elif self.global_object.finish_condition.finish_triger == FINISH_TRIGER.NO_WOLFS:
-                self.broadcast_data("人狼陣営の勝利...かと思われましたが、")
-            else:
-                pass # 上のどっちかのはず.
-            self.broadcast_data("ここで、妖狐が現れました!\よって、妖狐陣営の勝利です!\n")
-            # 勝者の記録
-            for k, v in cuplies_dict_.items():
-                self.global_object.finish_condition.win_players.append(k)
-                self.global_object.finish_condition.win_players.append(v[0])
-                self.global_object.finish_condition.win_players.append(v[1])
+        elif self.global_object.finish_condition == WIN_CONDITION.WOLF_EQ_OR_MORE_THAN_CITIZEN:
+            self.broadcast_data("この村の市民と人狼が同数となりました")
+            self.broadcast_data("よって、人狼陣営の勝利です！\n")
 
-        # 恋人たちの勝利
-        elif self.global_object.finish_condition.finish_type == WIN_CONDITION.CUPIT_CUPLE:
-            if self.global_object.finish_condition.finish_triger == FINISH_TRIGER.NO_WOLFS:
-                self.broadcast_data("市民陣営の勝利...かと思われましたが、")
-            elif self.global_object.finish_condition.finish_triger == FINISH_TRIGER.NO_WOLFS:
-                self.broadcast_data("人狼陣営の勝利...かと思われましたが、")
-            else:
-                pass # 上のどっちかのはず.
-            cuplies_dict_ = self.check_cuples_alive()
-            s_ = ", ".join([f"{c}の結びつけた{l[0]}-{l[1]}" for c, l in cuplies_dict_.items()])
-            self.broadcast_data(f"恋人が生き残っていました!\nよって、{s_} たちの勝利です!\n")
-        else:
-            pass
+        elif self.global_object.finish_condition == WIN_CONDITION.NO_WOLFS_BUT_THIRD_FORCE:
+            self.broadcast_data("この村から全ての人狼が追放されました")
+            self.broadcast_data("が、妖狐がいました.")
+            self.broadcast_data("よって、第三陣営の勝利です！\n")
 
-        # この後追加でてるてるの確認
-        if self.global_object.finish_condition.win_players_hanged:
-            p_str = ", ".join(self.global_object.finish_condition.win_players_hanged)
-            self.broadcast_data(f"また、{HANGED_WIN_DATE.hanged_win_date(self.global_object.player_num)}日以降に吊られた てるてる の {p_str} も勝利となります!\n")
-
-        
-        # 勝者一覧のbroadcast
-        game_winners_ = self.global_object.finish_condition.win_players
-        game_winners_ += self.global_object.finish_condition.win_players_hanged
-        game_winners_str = '\n'.join(game_winners_)
-        self.broadcast_data(f"\n########## 勝者たち ##########\n{game_winners_str}\n")
-
-
+        elif self.global_object.finish_condition == WIN_CONDITION.WOLF_EQ_OR_MORE_THAN_CITIZEN_BUT_THIRD_FORCE:
+            self.broadcast_data("この村の市民と人狼が同数となりました")
+            self.broadcast_data("が、妖狐がいました.")
+            self.broadcast_data("よって、第三陣営の勝利です！\n")
 
     def show_roles(self):
         players_ = self.global_object.players
