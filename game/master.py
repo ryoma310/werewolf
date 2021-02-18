@@ -179,6 +179,8 @@ class MasterThread(Thread):
     def magician_swtich_phase(self):
         dead_list = []
         magician_list = [k for k, v in self.global_object.magician_dict.items()]  # 魔術師のリストをとってくる
+        if len(magician_list) == 0:
+            return
         magic_success_man = random.choice(magician_list)  # 魔術師の中から抽選
         for magician, target in self.global_object.magician_dict.items():
             if magician == magic_success_man:
