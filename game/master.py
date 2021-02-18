@@ -551,11 +551,6 @@ class MasterThread(Thread):
             else:
                 pass # 上のどっちかのはず.
             self.broadcast_data("ここで、妖狐が現れました!\よって、妖狐陣営の勝利です!\n")
-            # 勝者の記録
-            for k, v in cuplies_dict_.items():
-                self.global_object.finish_condition.win_players.append(k)
-                self.global_object.finish_condition.win_players.append(v[0])
-                self.global_object.finish_condition.win_players.append(v[1])
 
         # 恋人たちの勝利
         elif self.global_object.finish_condition.finish_type == WIN_CONDITION.CUPIT_CUPLE:
