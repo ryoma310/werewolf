@@ -18,6 +18,11 @@ class _ZERO(Action_AbstClass):
     def action(self):
         # 生存者の一覧を取得
         p_dict = self.master_.alive_players_dict()
+        # 自分自身を候補から削除
+        for k, v in p_dict.items():
+            if v == self.player_.player_name:
+                p_dict.pop(k)
+                break
         # 選択肢をbroadcast
         p_dict_str = "\n".join([f"{k}: {v}" for k, v in p_dict.items()])
         self.player_.send_data("誰の役職を奪いますか？:\n" + p_dict_str + "\n")

@@ -39,6 +39,7 @@ class GlobalObject:
         self.finish_condition: WIN_CONDITION = None
         self.check_username_lock = threading.RLock()
         self.voted_user = None
+        self.magic_target = None
         # self.fortune_dict: defaultdict = defaultdict(str)
         # self.guard_user = None #佐古追加、騎士がサイコキラーを守ったかの判別 騎士クラスは未編集
         # self.forecast_user = None #佐古追加、占い師がサイコキラーを占ったかの判別 占い師クラスは未編集
@@ -176,21 +177,32 @@ class MasterThread(Thread):
 
     def magician_swtich_phase(self):
         dead_list = []
+        magician_list = [k for k, v in self.global_object.magician_dict.items()]  # 魔術師のリストをとってくる
+        magic_success_man = random.choice(magician_list)  # 魔術師の中から抽選
         for magician, target in self.global_object.magician_dict.items():
-            self.switch_role(
-                self.global_object.players[magician], self.global_object.players[target].role.role_enum)
-            self.global_object.players[magician].send_data(
-                f"{target} の役職は, \"{self.global_object.players[target].role.role_name}\" でした.")
-            self.global_object.players[magician].send_data(
-                f"よってあなたの役職は, \"{self.global_object.players[target].role.role_name}\" になります.")
+            if magician == magic_success_man:
+                self.global_object.magic_target = target
+                self.switch_role(
+                    self.global_object.players[magician], self.global_object.players[target].role.role_enum)
+                self.global_object.players[magician].send_data(
+                    f"{target} の役職は, \"{self.global_object.players[target].role.role_name}\" でした.")
+                self.global_object.players[magician].send_data(
+                    f"よってあなたの役職は, \"{self.global_object.players[target].role.role_name}\" になります.")
+            else: # 抽選漏れの件を伝えると仮定
+                self.switch_role(
+                    self.global_object.players[magician], ROLES.CITIZEN)
+                self.global_object.players[magician].send_data(f"残念ながらあなたは役職を奪えませんでした.")
+                self.global_object.players[magician].send_data(f"よってあなたの役職は, 市民 になります.")
 
         for magician, target in self.global_object.magician_dict.items():
-            werewolfs_num = len([p.player_name for p in self.global_object.players.values(
-            ) if p.role.role_enum is ROLES.WEREWOLF])
-            if self.global_object.players[target].role.role_enum == ROLES.WEREWOLF and werewolfs_num >= 2:
-                self.global_object.dead_list_for_magician.append(target)
-            self.switch_role(self.global_object.players[target], ROLES.CITIZEN)
-            # self.global_object.players[target].send_data(f"あなたは魔術師に役職を奪われたため \"市民\" になりました.")
+            if magician == magic_success_man:
+                werewolfs_num = len([p.player_name for p in self.global_object.players.values(
+                ) if p.role.role_enum is ROLES.WEREWOLF])
+                # 人狼が複数人いる場合, 魔術師が人狼を奪うと, その人狼は市民になって死ぬ
+                if self.global_object.players[target].role.role_enum == ROLES.WEREWOLF and werewolfs_num >= 2:
+                    self.global_object.dead_list_for_magician.append(target)
+                self.switch_role(self.global_object.players[target], ROLES.CITIZEN)
+                # self.global_object.players[target].send_data(f"あなたは魔術師に役職を奪われたため \"市民\" になりました.")
 
     def check_fox_immoral(self):
         fox_ = [
@@ -445,6 +457,12 @@ class MasterThread(Thread):
 
         # print(self.global_object.players_alive)
 
+    def announce_magician_result(self):
+        target = self.global_object.magic_target
+        if self.global_object.day == 1 and target and self.global_object.players[target].alive:
+            self.global_object.players[target].send_data("あなたは役職を奪われた為, \"市民\" になりました.\n")
+
+
     def check_game_finish(self, hanged_win_alone=None):
         if hanged_win_alone:  # てるてる一人勝ち
             self.global_object.hanged_win_alone_player_name = hanged_win_alone
@@ -597,6 +615,7 @@ class MasterThread(Thread):
                 ## 夜 (スレッドに指令を出す)
                 # self.broadcast_data(f"\n------ {self.global_object.day}日目 夜 ------\n")
                 self.broadcast_data(f"\n---------- 恐ろしい夜がやってきました ----------\n")
+                self.announce_magician_result() # 魔術師が役職を奪った旨を当事者に通知
                 self.global_object.suspect_list = []  # 市民疑う用配列の初期化
                 self.global_object.attack_target = defaultdict(
                     int)  # 人狼襲撃用配列の初期化
