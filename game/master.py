@@ -200,14 +200,15 @@ class MasterThread(Thread):
 
         for magician, target in self.global_object.magician_dict.items():
             if magician == magic_success_man:
+                target_role_enum = self.global_object.players[target].role.role_enum
+                self.switch_role(self.global_object.players[target], ROLES.CITIZEN)
                 werewolfs_num = len([p.player_name for p in self.global_object.players.values(
                 ) if p.role.role_enum is ROLES.WEREWOLF])
                 # 人狼が複数人いる場合, 魔術師が人狼を奪うと, その人狼は市民になって死ぬ
-                if self.global_object.players[target].role.role_enum == ROLES.WEREWOLF:
+                if target_role_enum == ROLES.WEREWOLF:
                     self.global_object.stealed_wolf = True
                     if werewolfs_num >= 2:
                         self.global_object.dead_list_for_magician.append(target)
-                self.switch_role(self.global_object.players[target], ROLES.CITIZEN)
                 # self.global_object.players[target].send_data(f"あなたは魔術師に役職を奪われたため \"市民\" になりました.")
 
     def check_fox_immoral(self):
