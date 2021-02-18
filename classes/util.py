@@ -1,6 +1,6 @@
 from enum import Enum, Flag, auto
 import dataclasses
-from typing import ClassVar, List, Dict, Tuple
+from typing import List
 
 class TIME_OF_DAY(Flag):
     MORNING = auto()

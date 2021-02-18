@@ -7,6 +7,7 @@ from classes.abst_classes.role_abst import Role_AbstClass
 import classes.roles
 from classes.util import TIME_OF_DAY, WIN_CONDITION
 import time
+from typing import List, Dict
 
 
 class PlayerThread(Thread):

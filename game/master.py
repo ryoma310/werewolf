@@ -4,6 +4,7 @@ import threading
 import statistics
 import random
 from collections import defaultdict
+from typing import Dict
 
 from .player import PlayerThread
 import classes.roles
@@ -27,7 +28,7 @@ class GlobalObject:
         self.end_flag: bool = False
         self.roles_dict = {i: r for i, r in enumerate(
             ROLES.ALL_ROLES)}
-        self.players_alive: list[PlayerThread] = []
+        self.players_alive: List[PlayerThread] = []
         self.vote_list: [str] = []
         self.suspect_list: [str] = []
         self.guard_dict: defaultdict = defaultdict(str)
@@ -706,3 +707,5 @@ class MasterThread(Thread):
         self.broadcast_data("---------- game end! ----------\n")
         self.end_game()
         self.global_object.event_wait_next.set()
+
+
