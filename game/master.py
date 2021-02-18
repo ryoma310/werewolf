@@ -79,17 +79,18 @@ class MasterThread(Thread):
                     self.broadcast_data(
                         f"{name_} joined! Now {ready_num}/{self.global_object.player_num} players ready, please wait all players ready...\n")
                 else:
+                    self.start_game()
                     self.broadcast_data(
                         f"{name_} joined! Now all players ready!\n")
-                    self.start_game()
+                    
                 return True
 
     def start_game(self):
-        self.started = True
+        self.global_object.started = True
         self.global_object.event_players_ready.set()
 
     def end_game(self):
-        self.started = False
+        self.global_object.started = False
         self.global_object.end_flag = True
         for p in self.global_object.players.values():
             p.end_flag = True
@@ -490,6 +491,7 @@ class MasterThread(Thread):
         # このあと、勝者をリストかなんかに入れておいて、後で全体/個人アナウンスで利用
         # self.global_object.finish_condition.win_playersに入れる
         if len(wolf_side_) == 0:  # 全ての人狼が追放
+            self.global_object.finish_condition.finish = True
             self.global_object.finish_condition.finish_triger = FINISH_TRIGER.NO_WOLFS
             if alive_cuples: # 恋人いた -> 生きている [(キューピット,恋人1,恋人2), ..] の勝利
                 self.global_object.finish_condition.finish_type = WIN_CONDITION.CUPIT_CUPLE
@@ -510,6 +512,7 @@ class MasterThread(Thread):
             return True
 
         elif len(wolf_side_) >= len(citizen_side_):  # 市民が人狼以下
+            self.global_object.finish_condition.finish = True
             self.global_object.finish_condition.finish_triger = FINISH_TRIGER.WOLF_EQ_OR_MORE_THAN_CITIZEN
             if alive_cuples: # 恋人いた -> 生きている [(キューピット,恋人1,恋人2), ..] の勝利
                 self.global_object.finish_condition.finish_type = WIN_CONDITION.CUPIT_CUPLE
