@@ -27,8 +27,8 @@ class WIN_STATUS:
     finish: bool = False
     finish_triger: FINISH_TRIGER = None
     finish_type: WIN_CONDITION = None
-    win_players: list[str] = dataclasses.field(default_factory=list)
-    win_players_hanged: list[str] = dataclasses.field(default_factory=list)
+    win_players: List[str] = dataclasses.field(default_factory=list)
+    win_players_hanged: List[str] = dataclasses.field(default_factory=list)
 
 
 class HANGED_WIN_DATE:
