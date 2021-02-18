@@ -10,6 +10,8 @@ select: method
     actionに対する選択などのやりとりを想定
 """
 # ここから下をいじる
+
+
 class _ZERO(Action_AbstClass):
     def __init__(self, player_, master_):
         self.player_ = player_
@@ -19,13 +21,14 @@ class _ZERO(Action_AbstClass):
         # キューピット一覧
         p_dict = self.master_.alive_players_dict()
         # 選択肢をbroadcast
-        p_dict_str = "\n".join([ f"{k}: {v}" for k, v in p_dict.items()])
+        p_dict_str = "\n".join([f"{k}: {v}" for k, v in p_dict.items()])
         self.player_.send_data("ユーザ一覧:\n" + p_dict_str + "\n")
 
         # 疑う
         p_dict = self.master_.alive_players_dict()
         # 問い合わせ
-        ok_send = self.player_.send_data("誰を結びつけますか?(入力例 1,2)\n入力 > ", with_CR=False)
+        ok_send = self.player_.send_data(
+            "誰を結びつけますか?(入力例 1,2)\n入力 > ", with_CR=False)
         while True:
             if not ok_send:
                 sys.exit(0)
@@ -36,13 +39,14 @@ class _ZERO(Action_AbstClass):
             if s_data[0].isdigit() and s_data[1].isdigit() and (int(s_data[0]) in p_dict.keys()) and (int(s_data[1]) in p_dict.keys()):
                 p1 = p_dict[int(s_data[0])]
                 p2 = p_dict[int(s_data[1])]
-                self.master_.submit_answer(submit_type="cupit", user=None, cupit1=p1, cupit2=p2) # 選択を登録
+                self.master_.submit_answer(
+                    submit_type="cupid", user=None, cupid1=p1, cupid2=p2)  # 選択を登録
                 ok_send = self.player_.send_data(f"{p1}と{p2}を結びつけました.\n")
                 return
             else:
-                ok_send = self.player_.send_data("フォーマット/入力エラー\n入力 > ", with_CR=False)
+                ok_send = self.player_.send_data(
+                    "フォーマット/入力エラー\n入力 > ", with_CR=False)
         pass
-
 
 
 class _MORNING(Action_AbstClass):
@@ -88,12 +92,14 @@ class _MIDNIGHT(Action_AbstClass):
                 sys.exit(0)
             if data.isdigit() and (int(data) in p_dict.keys()):
                 suspected_player = p_dict[int(data)]
-                self.master_.submit_answer(submit_type="suspect", user=suspected_player) # 選択を登録
-                ok_send = self.player_.send_data(f"suspect {p_dict[int(data)]}\n")
+                self.master_.submit_answer(
+                    submit_type="suspect", user=suspected_player)  # 選択を登録
+                ok_send = self.player_.send_data(
+                    f"suspect {p_dict[int(data)]}\n")
                 return
             else:
-                ok_send = self.player_.send_data("please enter player number\nsuspect > ", with_CR=False)
-
+                ok_send = self.player_.send_data(
+                    "please enter player number\nsuspect > ", with_CR=False)
 
 
 # ここまで

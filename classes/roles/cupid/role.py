@@ -18,7 +18,8 @@ functions: (といいつつannotationでpropertyなものも)
     knowledges(TIME_OF_DAY) -> str:     朝,昼,晩に得られる知識
 """
 
-class Cupit_Role(Role_AbstClass):
+
+class Cupid_Role(Role_AbstClass):
     def __init__(self, name, player_, master_):
         super().__init__(name)
         self.player_ = player_
@@ -31,27 +32,26 @@ class Cupit_Role(Role_AbstClass):
     # role_name -> role_enum.valueを返す
     # を実装
 
-
     # 役職定数: abstractproperty implementation
+
     @property
     def role_enum(self):
-        return ROLES.CUPID # ここを変更
-
+        return ROLES.CUPID  # ここを変更
 
     # 勝利条件: abstractproperty implementation
+
     @property
     def win_condition(self) -> WIN_CONDITION:
-        return WIN_CONDITION.NO_WOLFS # ここを変更
-
-
+        return WIN_CONDITION.NO_WOLFS  # ここを変更
 
     ###################### ここから下は共通 #############################
     # 各役割の行動: abstractproperty implementation
+
     def take_action(self, time_of_day: TIME_OF_DAY):
         # action は messageとselectを実装
         self.__actions.action_dict[time_of_day].action()
 
-
     # 各役割の知識用: abstractproperty implementation
+
     def get_knowledge(self, time_of_day: TIME_OF_DAY):
         self.__knowledges.knowledge_dict[time_of_day].knowledge()

@@ -7,4 +7,4 @@ usage:
 """
 
 def player_instance(name, player_, master_):
-    return Cupit_Role(name, player_, master_)
+    return Cupid_Role(name, player_, master_)
