@@ -35,6 +35,7 @@ class GlobalObject:
         self.attack_target: defaultdict = defaultdict(int)
         self.fortune_dict: defaultdict = defaultdict(str)
         self.magician_dict: defaultdict = defaultdict(str)
+        self.cupid_dict: defaultdict = defaultdict(str)
         self.finish_condition: WIN_CONDITION = None
         self.check_username_lock = threading.RLock()
         self.voted_user = None
@@ -127,6 +128,7 @@ class MasterThread(Thread):
                 if p1 and p2:  # 一応チェック
                     self.global_object.lovers_dict[p1].append(p2)
                     self.global_object.lovers_dict[p2].append(p1)
+                self.global_object.cupid_dict[user] = [p1, p2]
             elif submit_type == "magician":
                 p, m = user.split()
                 self.global_object.magician_dict[p] = m
@@ -333,9 +335,10 @@ class MasterThread(Thread):
         fox_fortuned_taller = [(k, v) for k, v in self.global_object.fortune_dict.items(
         ) if self.global_object.players[v].role.role_enum == ROLES.FOX_SPIRIT]
         for f, name in fox_fortuned_taller:
-            self.global_object.dead_log.append(
-                f"{self.global_object.day}日目:占い師{f}が妖狐{name}を占い、{name}が死亡")
-            dead_list.append(name)
+            if not name in dead_list:
+                self.global_object.dead_log.append(
+                    f"{self.global_object.day}日目:占い師{f}が妖狐{name}を占い、{name}が死亡")
+                dead_list.append(name)
 
         # 人狼いろいろ
         max_val = max(self.global_object.attack_target.values())  # 最大値をとる
@@ -344,50 +347,77 @@ class MasterThread(Thread):
         attacked_user = random.choice(top_user)  # 重複があるとランダムに1人
 
         # サイコキラーについて考える
+        for k, v in self.global_object.cupid_dict.items():
+            if not k in dead_list:
+                will_cupid_die = False
+                p1, p2 = v
+                if self.global_object.players[p1].role.role_enum == ROLES.PSYCHO_KILLER:
+                    will_cupid_die = True
+                if self.global_object.players[p2].role.role_enum == ROLES.PSYCHO_KILLER:
+                    will_cupid_die = True
+                    p1, p2 = p2, p1
+                if will_cupid_die:
+                    dead_list.append(k)
+                    self.global_object.dead_log.append(
+                        f"{self.global_object.day}日目:キューピッド{k}がサイコキラー{p1}と{p2}を恋人にし、{k}が死亡")
+        self.global_object.cupid_dict = defaultdict(str)
+
         # 騎士がサイコキラーを守っていたかどうか
         for k, v in self.global_object.guard_dict.items():
-            if self.global_object.players[v].role.role_enum == ROLES.PSYCHO_KILLER:
-                dead_list.append(k)
-                self.global_object.dead_log.append(
-                    f"{self.global_object.day}日目:騎士{k}がサイコキラー{v}を庇い、{k}が死亡")
+            if not k in dead_list:
+                if self.global_object.players[v].role.role_enum == ROLES.PSYCHO_KILLER:
+                    dead_list.append(k)
+                    self.global_object.dead_log.append(
+                        f"{self.global_object.day}日目:騎士{k}がサイコキラー{v}を庇い、{k}が死亡")
+        # 後で使うので騎士dictはまだ初期化しない
 
         # 占い師がサイコキラーを占っていたかどうか
         for k, v in self.global_object.fortune_dict.items():
-            if self.global_object.players[v].role.role_enum == ROLES.PSYCHO_KILLER:
-                dead_list.append(k)
-                self.global_object.dead_log.append(
-                    f"{self.global_object.day}日目:占い師{k}がサイコキラー{v}を占い、{k}が死亡")
+            if not k in dead_list:
+                if self.global_object.players[v].role.role_enum == ROLES.PSYCHO_KILLER:
+                    dead_list.append(k)
+                    self.global_object.dead_log.append(
+                        f"{self.global_object.day}日目:占い師{k}がサイコキラー{v}を占い、{k}が死亡")
+        self.global_object.fortune_dict = defaultdict(str)
+
         # attacked_user がサイコキラーだった場合、襲撃しようとした人狼(の内一人)が返り討ちに遭う
         if self.global_object.players[attacked_user].role.role_enum == ROLES.PSYCHO_KILLER:
             revenged_wolf = self.global_object.players[attacked_user].role.revenge_wolf(
             )
-            dead_list.append(revenged_wolf)
-            self.global_object.dead_log.append(
-                f"{self.global_object.day}日目:人狼{revenged_wolf}がサイコキラー{attacked_user}を襲い、{revenged_wolf}が死亡")
+            if not revenged_wolf in dead_list:
+                dead_list.append(revenged_wolf)
+                self.global_object.dead_log.append(
+                    f"{self.global_object.day}日目:人狼{revenged_wolf}がサイコキラー{attacked_user}を襲い、{revenged_wolf}が死亡")
 
         # ここで、騎士の守りをチェック
         guard_list = self.global_object.guard_dict.values()
-        stealed_wolf = False
+        self.global_object.attack_target = defaultdict(int)  # 初期化
+        self.global_object.guard_target = []
+
         # マジシャンが人狼を奪って, 襲撃が無効化
+        stealed_wolf = False
         for dead_person in self.global_object.dead_list_for_magician:
-            dead_list.append(dead_person)  # 元人狼死亡
-            self.global_object.dead_log.append(
-                f"{self.global_object.day}日目:人狼{dead_person}がマジシャンに役職を奪われ、{dead_person}が死亡")
-            stealed_wolf = True
+            if not dead_person in dead_list:
+                dead_list.append(dead_person)  # 元人狼死亡
+                self.global_object.dead_log.append(
+                    f"{self.global_object.day}日目:人狼{dead_person}がマジシャンに役職を奪われ、{dead_person}が死亡")
+                stealed_wolf = True
         self.global_object.dead_list_for_magician = []
         if (attacked_user not in guard_list) and (self.global_object.players[attacked_user].role.role_enum is not ROLES.FOX_SPIRIT) and (self.global_object.players[attacked_user].role.role_enum is not ROLES.PSYCHO_KILLER) and not stealed_wolf:
-            self.global_object.dead_log.append(
-                f"{self.global_object.day}日目:人狼が{attacked_user}を襲い、{attacked_user}が死亡")
-            dead_list.append(attacked_user)
-            if self.global_object.players[attacked_user].role.role_enum == ROLES.MONSTER_CAT or self.global_object.players[attacked_user].role.role_enum == ROLES.BLACK_CAT:
-                bitten_user = self.global_object.players[attacked_user].role.bit_attacked(
-                )
-                rolename = "黒猫"
-                if self.global_object.players[attacked_user].role.role_enum == ROLES.MONSTER_CAT:
-                    rolename = "猫又"
+            if not attacked_user in dead_list:
                 self.global_object.dead_log.append(
-                    f"{self.global_object.day}日目:瀕死の{rolename}{attacked_user}が{bitten_user}を道連れにし、{bitten_user}が死亡")
-                dead_list.append(bitten_user)
+                    f"{self.global_object.day}日目:人狼が{attacked_user}を襲い、{attacked_user}が死亡")
+                dead_list.append(attacked_user)
+                if self.global_object.players[attacked_user].role.role_enum == ROLES.MONSTER_CAT or self.global_object.players[attacked_user].role.role_enum == ROLES.BLACK_CAT:
+                    bitten_user = self.global_object.players[attacked_user].role.bit_attacked(
+                    )
+                    rolename = "黒猫"
+                    if self.global_object.players[attacked_user].role.role_enum == ROLES.MONSTER_CAT:
+                        rolename = "猫又"
+                    if not bitten_user in dead_list:
+                        self.global_object.dead_log.append(
+                            f"{self.global_object.day}日目:瀕死の{rolename}{attacked_user}が{bitten_user}を道連れにし、{bitten_user}が死亡")
+                        dead_list.append(bitten_user)
 
         dead_list_str = "いません"
         if len(dead_list) > 0:
@@ -396,9 +426,6 @@ class MasterThread(Thread):
         self.broadcast_data(f"昨晩の犠牲者は {dead_list_str} でした.")
 
         self.kill_chain(dead_list)
-
-        self.global_object.attack_target = defaultdict(int)  # 初期化
-        self.global_object.guard_target = []
 
     def anounce_bread_result(self):
         bakers_ = [
