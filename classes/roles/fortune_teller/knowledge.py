@@ -6,13 +6,17 @@ from classes.util import TIME_OF_DAY
 
 ######################################################################
 # ここから下をいじる
+
+
 class _ZERO(Knowledge_AbstClass):
     def __init__(self, player_, master_):
         self.player_ = player_
         self.master_ = master_
 
     def knowledge(self):
-        self.player_.send_data("knowledge: No info provided to your role\n")
+        pass
+        # self.player_.send_data("knowledge: No info provided to your role\n")
+
 
 class _MORNING(Knowledge_AbstClass):
     def __init__(self, player_, master_):
@@ -20,7 +24,8 @@ class _MORNING(Knowledge_AbstClass):
         self.master_ = master_
 
     def knowledge(self):
-        self.player_.send_data("knowledge: No info provided to your role\n")
+        pass
+        # self.player_.send_data("knowledge: No info provided to your role\n")
 
 
 class _DAYTIME(Knowledge_AbstClass):
@@ -39,7 +44,8 @@ class _MIDNIGHT(Knowledge_AbstClass):
         self.master_ = master_
 
     def knowledge(self):
-        self.player_.send_data("knowledge: No info provided to your role\n")
+        pass
+        # self.player_.send_data("knowledge: No info provided to your role\n")
 
 
 # ここまで
@@ -61,5 +67,3 @@ class Knowledge:
 # if __name__=="__main__":
 #     v = Villager_Knowledge()
 #     print(v.get_knowledge(TIME_OF_DAY.MORNING))
-    
-
