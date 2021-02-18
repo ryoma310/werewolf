@@ -40,11 +40,11 @@ class _ZERO(Action_AbstClass):
             if not ok_recv:
                 sys.exit(0)
             s_data = data.split(",")
-            if s_data[0].isdigit() and s_data[1].isdigit() and (int(s_data[0]) in p_dict.keys()) and (int(s_data[1]) in p_dict.keys()):
+            if s_data[0].isdigit() and s_data[1].isdigit() and (int(s_data[0]) in p_dict.keys()) and (int(s_data[1]) in p_dict.keys()) and s_data[0] != s_data[1]:
                 p1 = p_dict[int(s_data[0])]
                 p2 = p_dict[int(s_data[1])]
                 self.master_.submit_answer(
-                    submit_type="cupid", user=None, cupid1=p1, cupid2=p2)  # 選択を登録
+                    submit_type="cupid", user=self.player_.player_name, cupid1=p1, cupid2=p2)  # 選択を登録
                 ok_send = self.player_.send_data(f"{p1}と{p2}を結びつけました.\n")
                 return
             else:
