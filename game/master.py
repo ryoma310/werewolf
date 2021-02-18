@@ -45,6 +45,7 @@ class GlobalObject:
         self.lovers_dict: defaultdict = defaultdict(list)
         self.hanged_win_alone_player_name: str = None
         self.dead_list_for_magician: [str] = []
+        self.dead_log: [str] = []
 
 
 class MasterThread(Thread):
@@ -242,6 +243,8 @@ class MasterThread(Thread):
             for p in dead_immoral:
                 if (not p in temp_dead_list):
                     self.broadcast_data(f"{p} が 妖狐の後を追って自殺しました．")
+                    self.global_object.dead_log.append(
+                        f"{self.global_object.day}日目:背徳者{p}が妖狐の後を追い、{p}が死亡")
                     temp_dead_list.append(p)
                     self.delete_player(p)
                     added = True
@@ -257,6 +260,8 @@ class MasterThread(Thread):
                 if not p in temp_dead_list:
                     self.broadcast_data(
                         f"{p} が恋人 {dead_user} を失った悲しみに耐えきれず、後追い自殺をしてしまいました..")
+                    self.global_object.dead_log.append(
+                        f"{self.global_object.day}日目:{p}が恋人{dead_user}の後を追い、{p}が死亡")
                     temp_dead_list.append(p)
                     self.delete_player(p)
                     added = True
@@ -271,11 +276,15 @@ class MasterThread(Thread):
                     )
                     self.broadcast_data(
                         f"ハンターの一撃により {killed_user} が犠牲となりました.")
+                    self.global_object.dead_log.append(
+                        f"{self.global_object.day}日目:ハンター{dead_user}の一撃により、{killed_user}が死亡")
                 else:
                     self.broadcast_data(f"死亡した {dead_user} は猫又でした．")
                     killed_user = self.global_object.players[dead_user].role.bit_explusion(
                     )
                     self.broadcast_data(f"{killed_user} が道連れになりました．")
+                    self.global_object.dead_log.append(
+                        f"{self.global_object.day}日目:猫又{dead_user}が{killed_user}を道連れにし、{killed_user}が死亡")
                 added = True
                 temp_dead_list.append(killed_user)
                 self.delete_player(killed_user)
@@ -298,6 +307,8 @@ class MasterThread(Thread):
             self.global_object.vote_list)  # modeのlistを返す
         execution_user = random.choice(top_user)  # 重複があるとランダムに1人
         self.broadcast_data(f"投票の結果、{execution_user} に決定しました")
+        self.global_object.dead_log.append(
+            f"{self.global_object.day}日目:投票により、{execution_user}が処刑")
         if (self.global_object.players[execution_user].role.role_enum == ROLES.HANGED) and (self.global_object.day >= HANGED_WIN_DATE.hanged_win_date(self.global_object.day)):
             self.broadcast_data(
                 f"が、しかし、{execution_user} は てるてる でした.\n{HANGED_WIN_DATE.hanged_win_date()}日以降のため、{execution_user}の勝利となります.")
@@ -319,9 +330,11 @@ class MasterThread(Thread):
         dead_list = []
 
         # 占い師が妖狐を占ったかの確認
-        fox_fortuned_taller = [v for v in self.global_object.fortune_dict.values(
+        fox_fortuned_taller = [(k, v) for k, v in self.global_object.fortune_dict.items(
         ) if self.global_object.players[v].role.role_enum == ROLES.FOX_SPIRIT]
-        for name in fox_fortuned_taller:
+        for f, name in fox_fortuned_taller:
+            self.global_object.dead_log.append(
+                f"{self.global_object.day}日目:占い師{f}が妖狐{name}を占い、{name}が死亡")
             dead_list.append(name)
 
         # 人狼いろいろ
@@ -335,15 +348,22 @@ class MasterThread(Thread):
         for k, v in self.global_object.guard_dict.items():
             if self.global_object.players[v].role.role_enum == ROLES.PSYCHO_KILLER:
                 dead_list.append(k)
+                self.global_object.dead_log.append(
+                    f"{self.global_object.day}日目:騎士{k}がサイコキラー{v}を庇い、{k}が死亡")
+
         # 占い師がサイコキラーを占っていたかどうか
         for k, v in self.global_object.fortune_dict.items():
             if self.global_object.players[v].role.role_enum == ROLES.PSYCHO_KILLER:
                 dead_list.append(k)
+                self.global_object.dead_log.append(
+                    f"{self.global_object.day}日目:占い師{k}がサイコキラー{v}を占い、{k}が死亡")
         # attacked_user がサイコキラーだった場合、襲撃しようとした人狼(の内一人)が返り討ちに遭う
         if self.global_object.players[attacked_user].role.role_enum == ROLES.PSYCHO_KILLER:
             revenged_wolf = self.global_object.players[attacked_user].role.revenge_wolf(
             )
             dead_list.append(revenged_wolf)
+            self.global_object.dead_log.append(
+                f"{self.global_object.day}日目:人狼{revenged_wolf}がサイコキラー{attacked_user}を襲い、{revenged_wolf}が死亡")
 
         # ここで、騎士の守りをチェック
         guard_list = self.global_object.guard_dict.values()
@@ -351,14 +371,20 @@ class MasterThread(Thread):
         # マジシャンが人狼を奪って, 襲撃が無効化
         for dead_person in self.global_object.dead_list_for_magician:
             dead_list.append(dead_person)  # 元人狼死亡
+            self.global_object.dead_log.append(
+                f"{self.global_object.day}日目:人狼{dead_person}がマジシャンに役職を奪われ、{dead_person}が死亡")
             stealed_wolf = False
         self.global_object.dead_list_for_magician = []
         if (attacked_user not in guard_list) and (self.global_object.players[attacked_user].role.role_enum is not ROLES.FOX_SPIRIT) and (self.global_object.players[attacked_user].role.role_enum is not ROLES.PSYCHO_KILLER) and stealed_wolf:
+            self.global_object.dead_log.append(
+                f"{self.global_object.day}日目:人狼が{attacked_user}を襲い、{attacked_user}が死亡")
             dead_list.append(attacked_user)
             if self.global_object.players[attacked_user].role.role_enum == ROLES.MONSTER_CAT or self.global_object.players[attacked_user].role.role_enum == ROLES.BLACK_CAT:
-                attacked_user = self.global_object.players[attacked_user].role.bit_attacked(
+                bitten_user = self.global_object.players[attacked_user].role.bit_attacked(
                 )
-                dead_list.append(attacked_user)
+                self.global_object.dead_log.append(
+                    f"{self.global_object.day}日目:瀕死の{attacked_user}が{bitten_user}を道連れにし、{bitten_user}が死亡")
+                dead_list.append(bitten_user)
 
         dead_list_str = "いません"
         if len(dead_list) > 0:
@@ -448,6 +474,11 @@ class MasterThread(Thread):
         p_dict_str = "\n".join(
             [f"{str(pid)}:{name}"for pid, name in p_dict.items()])
         self.broadcast_data("現在の生存者\n" + p_dict_str)
+
+    def show_dead_logs(self):
+        self.broadcast_data("\n今回の死亡原因一覧:")
+        for log in self.global_object.dead_log:
+            self.broadcast_data(log)
 
     def calc_discuss_time(self) -> (str, int):
         # returns ("xx分", その秒数)
@@ -547,6 +578,7 @@ class MasterThread(Thread):
                 self.wait_answer_start()
 
         self.show_roles()
+        self.show_dead_logs()
 
         self.broadcast_data("---------- game end! ----------\n")
         self.end_game()
