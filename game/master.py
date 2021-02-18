@@ -468,7 +468,6 @@ class MasterThread(Thread):
         for c, l in self.global_object.cupid_lovers_dict.items():
             if set(l) <= p_set:
                 alive_cuples[c] = l
-            print("cupit", alive_cuples)
         return alive_cuples # returns alive {"cupid": [p1,p2], "cupid2": [p3,p4], }
 
     def announce_magician_result(self):
