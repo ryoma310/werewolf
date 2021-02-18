@@ -37,6 +37,7 @@ class GlobalObject:
         self.fortune_dict: defaultdict = defaultdict(str)
         self.magician_dict: defaultdict = defaultdict(str)
         self.cupid_dict: defaultdict = defaultdict(str)
+        self.cupid_lovers_dict: defaultdict = defaultdict(str)
         self.finish_condition: WIN_STATUS = WIN_STATUS()
         self.check_username_lock = threading.RLock()
         self.voted_user = None
@@ -132,6 +133,7 @@ class MasterThread(Thread):
                     self.global_object.lovers_dict[p2].append(p1)
 
                 self.global_object.cupid_dict[user] = [p1, p2]
+                self.global_object.cupid_lovers_dict[user] = [p1, p2] # 一個にしたいなぁ
             elif submit_type == "magician":
                 p, m = user.split()
                 self.global_object.magician_dict[p] = m
@@ -330,7 +332,7 @@ class MasterThread(Thread):
         self.global_object.dead_log.append(
             f"{self.global_object.day}日目:投票により、{execution_user}が処刑")
         if (self.global_object.players[execution_user].role.role_enum == ROLES.HANGED) and (self.global_object.day >= HANGED_WIN_DATE.hanged_win_date(self.global_object.player_num)):
-            self.global_object.win_condition.win_players_hanged.append(execution_user) # 勝ったリストに追加
+            self.global_object.finish_condition.win_players_hanged.append(execution_user) # 勝ったリストに追加
 
         self.kill_chain([execution_user])
 
@@ -376,7 +378,7 @@ class MasterThread(Thread):
                     dead_list.append(k)
                     self.global_object.dead_log.append(
                         f"{self.global_object.day}日目:キューピッド{k}がサイコキラー{p1}と{p2}を恋人にし、{k}が死亡")
-        self.global_object.cupid_dict = defaultdict(str) # 初夜でcupid_dict初期化されるけど..?
+        self.global_object.cupid_dict = defaultdict(str) # 後々、使いまわしたいなぁ
 
         # 騎士がサイコキラーを守っていたかどうか
         for k, v in self.global_object.guard_dict.items():
@@ -463,7 +465,7 @@ class MasterThread(Thread):
     def check_cuples_alive(self):
         p_set = set([p.player_name for p in self.global_object.players_alive])
         alive_cuples = dict()
-        for c, l in self.global_object.cupid_dict.items():
+        for c, l in self.global_object.cupid_lovers_dict.items():
             if set(l) <= p_set:
                 alive_cuples[c] = l
         return alive_cuples # returns alive {"cupid": [p1,p2], "cupid2": [p3,p4], }
