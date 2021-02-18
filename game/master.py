@@ -322,7 +322,7 @@ class MasterThread(Thread):
             for p_name, l_s in self.global_object.lovers_dict.items():
                 p = self.global_object.players[p_name]
                 l_s_str = ", ".join(l_s)
-                p.send_data(f"あなたは {l_s} と結ばれています.")
+                p.send_data(f"あなたは {l_s_str} と結ばれています.")
 
     def anounce_vote_result(self):
         top_user = statistics.multimode(
@@ -468,6 +468,7 @@ class MasterThread(Thread):
         for c, l in self.global_object.cupid_lovers_dict.items():
             if set(l) <= p_set:
                 alive_cuples[c] = l
+            print("cupit", alive_cuples)
         return alive_cuples # returns alive {"cupid": [p1,p2], "cupid2": [p3,p4], }
 
     def announce_magician_result(self):
