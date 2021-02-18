@@ -48,6 +48,7 @@ class GlobalObject:
         self.lovers_dict: defaultdict = defaultdict(list)
         self.dead_list_for_magician: [str] = []
         self.dead_log: [str] = []
+        self.stealed_wolf = False
 
 
 class MasterThread(Thread):
@@ -202,8 +203,10 @@ class MasterThread(Thread):
                 werewolfs_num = len([p.player_name for p in self.global_object.players.values(
                 ) if p.role.role_enum is ROLES.WEREWOLF])
                 # 人狼が複数人いる場合, 魔術師が人狼を奪うと, その人狼は市民になって死ぬ
-                if self.global_object.players[target].role.role_enum == ROLES.WEREWOLF and werewolfs_num >= 2:
-                    self.global_object.dead_list_for_magician.append(target)
+                if self.global_object.players[target].role.role_enum == ROLES.WEREWOLF:
+                    self.global_object.stealed_wolf = True
+                    if werewolfs_num >= 2:
+                        self.global_object.dead_list_for_magician.append(target)
                 self.switch_role(self.global_object.players[target], ROLES.CITIZEN)
                 # self.global_object.players[target].send_data(f"あなたは魔術師に役職を奪われたため \"市民\" になりました.")
 
@@ -408,15 +411,13 @@ class MasterThread(Thread):
         self.global_object.guard_target = []
 
         # マジシャンが人狼を奪って, 襲撃が無効化
-        stealed_wolf = False
         for dead_person in self.global_object.dead_list_for_magician:
             if not dead_person in dead_list:
                 dead_list.append(dead_person)  # 元人狼死亡
                 self.global_object.dead_log.append(
                     f"{self.global_object.day}日目:人狼{dead_person}がマジシャンに役職を奪われ、{dead_person}が死亡")
-                stealed_wolf = True
         self.global_object.dead_list_for_magician = []
-        if (attacked_user not in guard_list) and (self.global_object.players[attacked_user].role.role_enum is not ROLES.FOX_SPIRIT) and (self.global_object.players[attacked_user].role.role_enum is not ROLES.PSYCHO_KILLER) and not stealed_wolf:
+        if (attacked_user not in guard_list) and (self.global_object.players[attacked_user].role.role_enum is not ROLES.FOX_SPIRIT) and (self.global_object.players[attacked_user].role.role_enum is not ROLES.PSYCHO_KILLER) and not self.global_object.stealed_wolf:
             if not attacked_user in dead_list:
                 self.global_object.dead_log.append(
                     f"{self.global_object.day}日目:人狼が{attacked_user}を襲い、{attacked_user}が死亡")
