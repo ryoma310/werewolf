@@ -332,7 +332,7 @@ class MasterThread(Thread):
         self.global_object.dead_log.append(
             f"{self.global_object.day}日目:投票により、{execution_user}が処刑")
         if (self.global_object.players[execution_user].role.role_enum == ROLES.HANGED) and (self.global_object.day >= HANGED_WIN_DATE.hanged_win_date(self.global_object.player_num)):
-            self.global_object.win_condition.win_players_hanged.append(execution_user) # 勝ったリストに追加
+            self.global_object.finish_condition.win_players_hanged.append(execution_user) # 勝ったリストに追加
 
         self.kill_chain([execution_user])
 
