@@ -12,7 +12,8 @@ class _ZERO(Knowledge_AbstClass):
         self.master_ = master_
 
     def knowledge(self):
-        self.player_.send_data("knowledge: No info provided to your role\n")
+        pass
+        # self.player_.send_data("knowledge: No info provided to your role\n")
 
 class _MORNING(Knowledge_AbstClass):
     def __init__(self, player_, master_):
@@ -20,7 +21,8 @@ class _MORNING(Knowledge_AbstClass):
         self.master_ = master_
 
     def knowledge(self):
-        self.player_.send_data("knowledge: No info provided to your role\n")
+        pass
+        # self.player_.send_data("knowledge: No info provided to your role\n")
 
 
 class _DAYTIME(Knowledge_AbstClass):
@@ -39,7 +41,8 @@ class _MIDNIGHT(Knowledge_AbstClass):
         self.master_ = master_
 
     def knowledge(self):
-        self.player_.send_data("knowledge: No info provided to your role\n")
+        pass
+        # self.player_.send_data("knowledge: No info provided to your role\n")
 
 
 # ここまで

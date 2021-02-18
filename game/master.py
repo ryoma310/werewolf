@@ -367,13 +367,13 @@ class MasterThread(Thread):
 
         # ここで、騎士の守りをチェック
         guard_list = self.global_object.guard_dict.values()
-        stealed_wolf = True
+        stealed_wolf = False
         # マジシャンが人狼を奪って, 襲撃が無効化
         for dead_person in self.global_object.dead_list_for_magician:
             dead_list.append(dead_person)  # 元人狼死亡
             self.global_object.dead_log.append(
                 f"{self.global_object.day}日目:人狼{dead_person}がマジシャンに役職を奪われ、{dead_person}が死亡")
-            stealed_wolf = False
+            stealed_wolf = True
         self.global_object.dead_list_for_magician = []
         if (attacked_user not in guard_list) and (self.global_object.players[attacked_user].role.role_enum is not ROLES.FOX_SPIRIT) and (self.global_object.players[attacked_user].role.role_enum is not ROLES.PSYCHO_KILLER) and stealed_wolf:
             self.global_object.dead_log.append(
