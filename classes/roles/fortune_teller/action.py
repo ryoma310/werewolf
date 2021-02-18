@@ -48,6 +48,10 @@ class _MIDNIGHT(Action_AbstClass):
     def action(self):
         # 占う対象の一覧を取得
         p_dict = self.master_.alive_players_dict()
+        for k, v in p_dict.items():
+            if v == self.player_.player_name:
+                p_dict.pop(k)
+                break
         # 選択肢をbroadcast
         p_dict_str = "\n".join([f"{k}: {v}" for k, v in p_dict.items()])
         self.player_.send_data("tell a someone's side:\n" + p_dict_str + "\n")
