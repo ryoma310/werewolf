@@ -244,7 +244,7 @@ class MasterThread(Thread):
                 if (not p in temp_dead_list):
                     self.broadcast_data(f"{p} が 妖狐の後を追って自殺しました．")
                     self.global_object.dead_log.append(
-                        f"{self.global_object.day}日目:背徳者{p}が妖狐の後を追い、{p}が死亡")
+                        f"{self.global_object.day}日目:妖狐の後を追い、背徳者{p}が死亡")
                     temp_dead_list.append(p)
                     self.delete_player(p)
                     added = True
@@ -261,7 +261,7 @@ class MasterThread(Thread):
                     self.broadcast_data(
                         f"{p} が恋人 {dead_user} を失った悲しみに耐えきれず、後追い自殺をしてしまいました..")
                     self.global_object.dead_log.append(
-                        f"{self.global_object.day}日目:{p}が恋人{dead_user}の後を追い、{p}が死亡")
+                        f"{self.global_object.day}日目:恋人{dead_user}の後を追い、{p}が死亡")
                     temp_dead_list.append(p)
                     self.delete_player(p)
                     added = True
