@@ -7,6 +7,7 @@ from classes.abst_classes.role_abst import Role_AbstClass
 import classes.roles
 from classes.util import TIME_OF_DAY, WIN_CONDITION
 import time
+from typing import List, Dict
 
 
 class PlayerThread(Thread):
@@ -242,14 +243,10 @@ class PlayerThread(Thread):
             self.master_.global_object.event_wait_next.wait()  # 次の段階待ち
             ########################
 
-        if self.master_.global_object.finish_condition == self.role.win_condition:
-            if self.role.win_condition == WIN_CONDITION.HANGED_WIN_ALONE:  # てるてるだけ別扱い
-                if self.master_.global_object.hanged_win_alone_player_name == self.player_name:  # 自分の一人勝ち
-                    _ = self.send_data(f"おめでとうございます!勝ちました!\n")
-                else:  # 自分以外のてるてる勝利
-                    _ = self.send_data(f"負けてしまいました.また次がんばりましょう.\n")
-            else:  # 勝利
-                _ = self.send_data(f"おめでとうございます!勝ちました!\n")
+        winners = self.master_.global_object.finish_condition.win_players
+        winners += self.master_.global_object.finish_condition.win_players_hanged
+        if self.player_name in winners:
+            _ = self.send_data(f"おめでとうございます!勝ちました!\n")
         else:  # 負けた
             _ = self.send_data(f"負けてしまいました.また次がんばりましょう.\n")
 

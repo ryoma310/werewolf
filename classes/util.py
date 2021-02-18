@@ -1,4 +1,6 @@
 from enum import Enum, Flag, auto
+import dataclasses
+from typing import List
 
 class TIME_OF_DAY(Flag):
     MORNING = auto()
@@ -9,10 +11,25 @@ class TIME_OF_DAY(Flag):
 class WIN_CONDITION(Flag):
     NO_WOLFS = auto()
     WOLF_EQ_OR_MORE_THAN_CITIZEN = auto()
-    NO_WOLFS_BUT_THIRD_FORCE = auto()
-    WOLF_EQ_OR_MORE_THAN_CITIZEN_BUT_THIRD_FORCE = auto()
-    THIRD_FORCE_LEFT = NO_WOLFS_BUT_THIRD_FORCE | WOLF_EQ_OR_MORE_THAN_CITIZEN_BUT_THIRD_FORCE
-    HANGED_WIN_ALONE = auto() # てるてる一人勝ち
+    THIRD_FORCE = auto()
+    CUPIT_CUPLE = auto()
+    # WOLF_EQ_OR_MORE_THAN_CITIZEN_BUT_THIRD_FORCE = auto()
+    # THIRD_FORCE_LEFT = NO_WOLFS_BUT_THIRD_FORCE & WOLF_EQ_OR_MORE_THAN_CITIZEN_BUT_THIRD_FORCE
+    # HANGED_WIN_ALONE = auto() # てるてる一人勝ち
+
+
+class FINISH_TRIGER(Flag):
+    NO_WOLFS = auto()
+    WOLF_EQ_OR_MORE_THAN_CITIZEN = auto()
+
+
+@dataclasses.dataclass
+class WIN_STATUS:
+    finish: bool = False
+    finish_triger: FINISH_TRIGER = None
+    finish_type: WIN_CONDITION = None
+    win_players: List[str] = dataclasses.field(default_factory=list)
+    win_players_hanged: List[str] = dataclasses.field(default_factory=list)
 
 
 class HANGED_WIN_DATE:
@@ -79,3 +96,14 @@ class ROLES(Enum):
     def ALL_ROLES(cls):
         return (r for r in ROLES)
 
+    @classproperty
+    def CITIZEN_SIDE_WINNER(cls):
+        return (cls.CITIZEN,cls.FORTUNE_TELLER,cls.KNIGHT,cls.SHAMAN,cls.HUNTER,cls.SHARER,cls.BAKER,cls.MONSTER_CAT,cls.POLICE_OFFICER)
+
+    @classproperty
+    def WEREWOLF_SIDE_WINNER(cls):
+      return (cls.WEREWOLF,cls.PSYCHO,cls.FANATIC,cls.PSYCHO_KILLER,cls.BLACK_CAT)
+
+    @classproperty
+    def THIRD_FORCE_SIDE_WINNER(cls):
+      return (cls.FOX_SPIRIT,cls.IMMORAL)
