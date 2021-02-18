@@ -382,8 +382,11 @@ class MasterThread(Thread):
             if self.global_object.players[attacked_user].role.role_enum == ROLES.MONSTER_CAT or self.global_object.players[attacked_user].role.role_enum == ROLES.BLACK_CAT:
                 bitten_user = self.global_object.players[attacked_user].role.bit_attacked(
                 )
+                rolename = "黒猫"
+                if self.global_object.players[attacked_user].role.role_enum == ROLES.MONSTER_CAT:
+                    rolename = "猫又"
                 self.global_object.dead_log.append(
-                    f"{self.global_object.day}日目:瀕死の{attacked_user}が{bitten_user}を道連れにし、{bitten_user}が死亡")
+                    f"{self.global_object.day}日目:瀕死の{rolename}{attacked_user}が{bitten_user}を道連れにし、{bitten_user}が死亡")
                 dead_list.append(bitten_user)
 
         dead_list_str = "いません"
