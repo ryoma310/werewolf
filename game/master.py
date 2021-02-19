@@ -496,10 +496,12 @@ class MasterThread(Thread):
             if alive_cuples: # 恋人いた -> 生きている [(キューピット,恋人1,恋人2), ..] の勝利
                 self.global_object.finish_condition.finish_type = WIN_CONDITION.CUPIT_CUPLE
                 # 勝者を記録
+                winners_ = []
                 for k, v in alive_cuples.items():
-                    self.global_object.finish_condition.win_players.append(k)
-                    self.global_object.finish_condition.win_players.append(v[0])
-                    self.global_object.finish_condition.win_players.append(v[1])
+                    winners_.append(k)
+                    winners_.append(v[0])
+                    winners_.append(v[1])
+                self.global_object.finish_condition.win_players = list(set(winners_))
             elif third_force_:  # 妖狐いた -> 妖狐,背徳者の勝利
                 self.global_object.finish_condition.finish_type = WIN_CONDITION.THIRD_FORCE
                 winners_ = [p.player_name for p in self.global_object.players.values() if (p.role.role_enum in ROLES.THIRD_FORCE_SIDE_WINNER) and (p.player_name not in lovers_set)]
@@ -517,10 +519,12 @@ class MasterThread(Thread):
             if alive_cuples: # 恋人いた -> 生きている [(キューピット,恋人1,恋人2), ..] の勝利
                 self.global_object.finish_condition.finish_type = WIN_CONDITION.CUPIT_CUPLE
                 # 勝者を記録
+                winners_ = []
                 for k, v in alive_cuples.items():
-                    self.global_object.finish_condition.win_players.append(k)
-                    self.global_object.finish_condition.win_players.append(v[0])
-                    self.global_object.finish_condition.win_players.append(v[1])
+                    winners_.append(k)
+                    winners_.append(v[0])
+                    winners_.append(v[1])
+                self.global_object.finish_condition.win_players = list(set(winners_))
             elif third_force_:  # 妖狐いた -> 妖狐,背徳者の勝利
                 self.global_object.finish_condition.finish_type = WIN_CONDITION.THIRD_FORCE
                 winners_ = [p.player_name for p in self.global_object.players.values() if (p.role.role_enum in ROLES.THIRD_FORCE_SIDE_WINNER) and (p.player_name not in lovers_set)]
