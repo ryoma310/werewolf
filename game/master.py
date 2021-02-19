@@ -248,9 +248,9 @@ class MasterThread(Thread):
 
     def kill_immoral(self):
         fox_ = [
-            p for p in self.global_object.players_alive.player_name  if p.role.role_enum is ROLES.FOX_SPIRIT]
+            p.player_name for p in self.global_object.players_alive  if p.role.role_enum is ROLES.FOX_SPIRIT]
         immoral_ = [
-            p for p in self.global_object.players_alive.player_name  if p.role.role_enum is ROLES.IMMORAL]
+            p.player_name for p in self.global_object.players_alive  if p.role.role_enum is ROLES.IMMORAL]
         if (not fox_) and (immoral_):  # foxがいなくて、immoralがいる
             random.shuffle(immoral_)
             return immoral_
