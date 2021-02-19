@@ -5,11 +5,37 @@ import statistics
 import random
 from collections import defaultdict
 from typing import Dict, List
+import datetime
 
 from .player import PlayerThread
 import classes.roles
 from classes.util import WIN_STATUS, WIN_CONDITION, FINISH_TRIGER, ROLES, HANGED_WIN_DATE
 
+
+class Discuss_Timer(Thread):
+    def __init__(self, discuss_event, time_sec, broadcast_):
+        Thread.__init__(self)
+        self.discuss_event = discuss_event
+        self.time_sec = time_sec
+        self.t_delta = datetime.timedelta(seconds=time_sec)
+        self.one_sec = datetime.timedelta(seconds=1)
+        self.broadcast_ = broadcast_ # 関数
+        self.print_header = "[*] master.py:"
+
+    def run(self):
+        for _ in range(self.time_sec):
+            time.sleep(1)
+            self.t_delta -= self.one_sec
+            # print(self.t_delta)
+            if self.t_delta.seconds // 60 > 0:
+                if self.t_delta.seconds % 60 == 0:
+                    self.broadcast_(f"残り {self.t_delta.seconds // 60} 分です.")
+            else: #self.t_delta.seconds // 60 == 0
+                if self.t_delta.seconds in [10, 30]:
+                    self.broadcast_(f"残り {self.t_delta.seconds} 秒です.")
+
+        self.discuss_event.set()
+        self.discuss_event.clear()
 
 class GlobalObject:
     def __init__(self, master):
@@ -25,6 +51,7 @@ class GlobalObject:
         self.event_players_role_select = Event()
         self.event_wait_answer = Event()
         self.event_wait_next = Event()
+        self.event_discuss_time = Event()
         self.end_flag: bool = False
         self.roles_dict = {i: r for i, r in enumerate(
             ROLES.ALL_ROLES)}
@@ -541,7 +568,7 @@ class MasterThread(Thread):
         # 終了トリガのアナウンス
         if self.global_object.finish_condition.finish_triger == FINISH_TRIGER.NO_WOLFS:
             self.broadcast_data("この村から全ての人狼が追放されました\n")
-        elif self.global_object.finish_condition.finish_triger == FINISH_TRIGER.NO_WOLFS:
+        elif self.global_object.finish_condition.finish_triger == FINISH_TRIGER.WOLF_EQ_OR_MORE_THAN_CITIZEN:
             self.broadcast_data("この村の市民と人狼が同数となりました\n")
         else:
             pass # 上のどっちかのはず.
@@ -557,7 +584,7 @@ class MasterThread(Thread):
         elif self.global_object.finish_condition.finish_type == WIN_CONDITION.THIRD_FORCE:
             if self.global_object.finish_condition.finish_triger == FINISH_TRIGER.NO_WOLFS:
                 self.broadcast_data("市民陣営の勝利...かと思われましたが、")
-            elif self.global_object.finish_condition.finish_triger == FINISH_TRIGER.NO_WOLFS:
+            elif self.global_object.finish_condition.finish_triger == FINISH_TRIGER.WOLF_EQ_OR_MORE_THAN_CITIZEN:
                 self.broadcast_data("人狼陣営の勝利...かと思われましたが、")
             else:
                 pass # 上のどっちかのはず.
@@ -567,7 +594,7 @@ class MasterThread(Thread):
         elif self.global_object.finish_condition.finish_type == WIN_CONDITION.CUPIT_CUPLE:
             if self.global_object.finish_condition.finish_triger == FINISH_TRIGER.NO_WOLFS:
                 self.broadcast_data("市民陣営の勝利...かと思われましたが、")
-            elif self.global_object.finish_condition.finish_triger == FINISH_TRIGER.NO_WOLFS:
+            elif self.global_object.finish_condition.finish_triger == FINISH_TRIGER.WOLF_EQ_OR_MORE_THAN_CITIZEN:
                 self.broadcast_data("人狼陣営の勝利...かと思われましたが、")
             else:
                 pass # 上のどっちかのはず.
@@ -614,8 +641,21 @@ class MasterThread(Thread):
     def calc_discuss_time(self) -> (str, int):
         # returns ("xx分", その秒数)
         day_ = self.global_object.day
+        d_str_ = "1分10秒"
+        d_time_ = datetime.timedelta(minutes=1, seconds=10).total_seconds()
 
-        return "5秒", 5
+        # 以下みたいな感じで、日にちごとに議論時間の文字列とそのtimedeltaを返してあげてください.
+        # if day_ in [1,2,3]:
+        #     d_str_ = "3分"
+        #     d_time_ = datetime.timedelta(minutes=3, seconds=0).total_seconds()
+        # elif day_ in [4,5]:
+        #     d_str_ = "1分10秒"
+        #     d_time_ = datetime.timedelta(minutes=1, seconds=10).total_seconds()
+        # else:
+        #     d_str_ = "1分"
+        #     d_time_ = datetime.timedelta(minutes=1, seconds=0).total_seconds()
+
+        return d_str_, int(d_time_)
 
     def run(self):
         # ここでゲームを展開
@@ -678,10 +718,13 @@ class MasterThread(Thread):
                 self.broadcast_data(
                     f"\n------ {self.global_object.day}日目 昼 ------\n")
                 # 議論の時間
-                discuss_time_str, discuss_time_int = self.calc_discuss_time()
+                discuss_time_str, discuss_time_sec = self.calc_discuss_time()
                 self.broadcast_data(f"議論時間は {discuss_time_str} です.")
-                self.broadcast_data(f"それでは議論を開始してください")
-                time.sleep(discuss_time_int)  # TODO: ここはいい感じにする. 残り時間通知とか..
+                self.broadcast_data(f"それでは議論を開始してください\n")
+                # timerを走らせて、待つ.
+                timer_thread = Discuss_Timer(self.global_object.event_discuss_time, discuss_time_sec, self.broadcast_data)
+                timer_thread.start()
+                self.global_object.event_discuss_time.wait()
 
                 self.broadcast_data(f"\n議論終了です.")
 
