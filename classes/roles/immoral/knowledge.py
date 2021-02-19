@@ -15,9 +15,10 @@ class _ZERO(Knowledge_AbstClass):
         self.master_ = master_
 
     def knowledge(self):
-        fox_list = [p.player_name for p in self.master_.global_object.players_alive if self.master_.global_object.players[p.player_name].role.role_enum is ROLES.FOX_SPIRIT]
-        fox_list_str = ",".join(fox_list)
-        self.player_.send_data(f"今回、妖狐は{fox_list_str}の{len(fox_list)}人です．\n")
+        #fox_list = [p.player_name for p in self.master_.global_object.players_alive if self.master_.global_object.players[p.player_name].role.role_enum is ROLES.FOX_SPIRIT]
+        #fox_list_str = ",".join(fox_list)
+        #self.player_.send_data(f"今回、妖狐は{fox_list_str}の{len(fox_list)}人です．\n")
+        pass
 
 
 class _MORNING(Knowledge_AbstClass):
@@ -46,7 +47,9 @@ class _MIDNIGHT(Knowledge_AbstClass):
         self.master_ = master_
 
     def knowledge(self):
-        pass
+        fox_list = [p.player_name for p in self.master_.global_object.players_alive if self.master_.global_object.players[p.player_name].role.role_enum is ROLES.FOX_SPIRIT]
+        fox_list_str = ",".join(fox_list)
+        self.player_.send_data(f"今回、妖狐は{fox_list_str}の{len(fox_list)}人です．\n")
         # self.player_.send_data("knowledge: No info provided to your role\n")
 
 
