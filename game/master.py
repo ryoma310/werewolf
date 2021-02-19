@@ -639,10 +639,24 @@ class MasterThread(Thread):
             self.broadcast_data(log)
 
     def calc_discuss_time(self) -> (str, int):
+        player_num = self.global_object.player_num
+        if player_num in [3,4]:
+            d_str_ = "2分"
+            d_time_ = datetime.timedelta(minutes=2, seconds=0).total_seconds()
+        elif player_num in [5,6,7]:
+            d_str_ = "3分"
+            d_time_ = datetime.timedelta(minutes=3, seconds=0).total_seconds()
+        elif player_num in [8,9,10]:
+            d_str_ = "4分"
+            d_time_ = datetime.timedelta(minutes=4, seconds=0).total_seconds()
+        else:
+            d_str_ = "5分"
+            d_time_ = datetime.timedelta(minutes=5, seconds=0).total_seconds()
+        
         # returns ("xx分", その秒数)
-        day_ = self.global_object.day
-        d_str_ = "1分10秒"
-        d_time_ = datetime.timedelta(minutes=1, seconds=10).total_seconds()
+        #day_ = self.global_object.day
+        #d_str_ = "1分10秒"
+        #d_time_ = datetime.timedelta(minutes=1, seconds=10).total_seconds()
 
         # 以下みたいな感じで、日にちごとに議論時間の文字列とそのtimedeltaを返してあげてください.
         # if day_ in [1,2,3]:
