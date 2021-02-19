@@ -486,7 +486,7 @@ class MasterThread(Thread):
         third_force_ = [
             p for p in self.global_object.players_alive if p.role.role_enum in ROLES.THIRD_FORCE_SIDE] # only FOX_SPIRIT
         alive_cuples = self.check_cuples_alive() # returns alive {"cupid": [p1,p2], "cupid2": [p3,p4], }
-
+        lovers_set = set(self.global_object.lovers_dict.keys())
 
         # このあと、勝者をリストかなんかに入れておいて、後で全体/個人アナウンスで利用
         # self.global_object.finish_condition.win_playersに入れる
@@ -502,11 +502,11 @@ class MasterThread(Thread):
                     self.global_object.finish_condition.win_players.append(v[1])
             elif third_force_:  # 妖狐いた -> 妖狐,背徳者の勝利
                 self.global_object.finish_condition.finish_type = WIN_CONDITION.THIRD_FORCE
-                winners_ = [p.player_name for p in self.global_object.players.values() if p.role.role_enum in ROLES.THIRD_FORCE_SIDE_WINNER]
+                winners_ = [p.player_name for p in self.global_object.players.values() if (p.role.role_enum in ROLES.THIRD_FORCE_SIDE_WINNER) and (p.player_name not in lovers_set)]
                 self.global_object.finish_condition.win_players = winners_
             else:  # 恋人も妖狐いない
                 self.global_object.finish_condition.finish_type = WIN_CONDITION.NO_WOLFS
-                winners_ = [p.player_name for p in self.global_object.players.values() if p.role.role_enum in ROLES.CITIZEN_SIDE_WINNER]
+                winners_ = [p.player_name for p in self.global_object.players.values() if (p.role.role_enum in ROLES.CITIZEN_SIDE_WINNER)  and (p.player_name not in lovers_set)]
                 self.global_object.finish_condition.win_players = winners_
 
             return True
@@ -523,11 +523,11 @@ class MasterThread(Thread):
                     self.global_object.finish_condition.win_players.append(v[1])
             elif third_force_:  # 妖狐いた -> 妖狐,背徳者の勝利
                 self.global_object.finish_condition.finish_type = WIN_CONDITION.THIRD_FORCE
-                winners_ = [p.player_name for p in self.global_object.players.values() if p.role.role_enum in ROLES.THIRD_FORCE_SIDE_WINNER]
+                winners_ = [p.player_name for p in self.global_object.players.values() if (p.role.role_enum in ROLES.THIRD_FORCE_SIDE_WINNER) and (p.player_name not in lovers_set)]
                 self.global_object.finish_condition.win_players = winners_
-            else:  # 妖狐いない
+            else:  # 恋人も妖狐いない
                 self.global_object.finish_condition.finish_type = WIN_CONDITION.WOLF_EQ_OR_MORE_THAN_CITIZEN
-                winners_ = [p.player_name for p in self.global_object.players.values() if p.role.role_enum in ROLES.WEREWOLF_SIDE_WINNER]
+                winners_ = [p.player_name for p in self.global_object.players.values() if (p.role.role_enum in ROLES.WEREWOLF_SIDE_WINNER) and (p.player_name not in lovers_set)]
                 self.global_object.finish_condition.win_players = winners_
             return True
 
