@@ -369,11 +369,12 @@ class MasterThread(Thread):
         self.global_object.vote_list = []
 
     def anounce_suspect_result(self):
-        top_user = statistics.multimode(
-            self.global_object.suspect_list)  # modeのlistを返す
-        suspected_user = random.choice(top_user)  # 重複があるとランダムに1人
-        self.broadcast_data(f"最も強く疑われている人物は {suspected_user} です")
-        self.global_object.suspect_list = []
+        if self.global_object.suspect_list:
+            top_user = statistics.multimode(
+                self.global_object.suspect_list)  # modeのlistを返す
+            suspected_user = random.choice(top_user)  # 重複があるとランダムに1人
+            self.broadcast_data(f"最も強く疑われている人物は {suspected_user} です")
+            self.global_object.suspect_list = []
 
     def anounce_attack_result(self):
         dead_list = []
@@ -474,7 +475,7 @@ class MasterThread(Thread):
 
     def anounce_bread_result(self):
         bakers_ = [
-            p for p in self.global_object.players_alive if p.role.role_enum is ROLES.BAKER]
+            p for p in self.global_object.players.values() if p.role.role_enum is ROLES.BAKER]
         if len(bakers_) != 0:
             alived_baker_bread = []
             # 愚直にまわす

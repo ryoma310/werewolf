@@ -105,7 +105,7 @@ class PlayerThread(Thread):
                     "some error occured, enter again > ", with_CR=False)
                 continue  # もう一回
 
-            name_ = data.replace("\n", "") # 改行は強制的に消す.(以降表示が変になって嫌なので)
+            name_ = data.replace("\n", "").replace(" ", "").replace("　", "") # 改行/空白は強制的に消す.(以降表示が変になって嫌なので)
             if not name_: # 空文字だったらもう一回
                 ok_send = self.send_data("some error occured, enter again > ", with_CR=False)
                 continue  # もう一回
