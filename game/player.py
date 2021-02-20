@@ -169,10 +169,19 @@ class PlayerThread(Thread):
             else:
                 ok_send = self.send_data(
                     "プレーヤーの番号を入力してください.\n投票 > ", with_CR=False)
+    
+    def show_current_roles(self):
+        players_a = self.master_.global_object.players_alive
+        players_role_dict = {
+            p.player_name: p.role.role_name for p in players_a}
+        p_r_dict_sorted = sorted(players_role_dict.items(), key=lambda x: x[1])
+        p_r_dict_sorted_str = "\n".join(
+            [f"{p_name}: {p_role}" for p_name, p_role in p_r_dict_sorted])
+        self.send_data("\nゲームを見守っているあなたへ.\n現在の役職は以下の通りです.\n" + p_r_dict_sorted_str + "\n")
 
     def set_not_alive(self):
         self.alive = False
-        self.send_data("死んでしまいました.\nもう生きてはいませんが、引き続き様子を見守りましょう")
+        self.send_data("死んでしまいました.\nもう生きてはいませんが、引き続き様子を見守りましょう\n")
         # ここで、役職公開とかもあり.
 
     def run(self):
@@ -215,6 +224,8 @@ class PlayerThread(Thread):
                 self.role.get_knowledge(TIME_OF_DAY.MORNING)
                 self.role.take_action(TIME_OF_DAY.MORNING)
                 self.master_.wait_answer_done()
+            else:
+                self.show_current_roles()
 
             self.master_.global_object.event_wait_next.wait()  # 次の段階待ち
             ########################

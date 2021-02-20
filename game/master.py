@@ -41,6 +41,7 @@ class GlobalObject:
     def __init__(self, master):
         self.master: MasterThread = master
         self.players:  Dict[str, PlayerThread] = {}
+        self.default_role: Dict[str, str] = {}
         self.day: int = 0
         self.started: bool = False
         self.player_num: int = None
@@ -182,6 +183,11 @@ class MasterThread(Thread):
         if found:
             self.global_object.players_alive.remove(found)
             found.set_not_alive()
+
+    def save_default_role(self):
+        players_ = self.global_object.players
+        self.global_object.default_role = {name: p.role.role_name for name, p in players_.items()}
+
 
     def validate_game_condition(self):
         # 成立条件: wolf > 0 and CITIZEN_SIDE > wolf
@@ -374,7 +380,7 @@ class MasterThread(Thread):
                 self.global_object.suspect_list)  # modeのlistを返す
             suspected_user = random.choice(top_user)  # 重複があるとランダムに1人
             self.broadcast_data(f"最も強く疑われている人物は {suspected_user} です")
-            self.global_object.suspect_list = []
+        self.global_object.suspect_list = []
 
     def anounce_attack_result(self):
         dead_list = []
@@ -624,8 +630,10 @@ class MasterThread(Thread):
         players_role_dict = {
             name: p.role.role_name for name, p in players_.items()}
         p_r_dict_sorted = sorted(players_role_dict.items(), key=lambda x: x[1])
+
+        d_role = self.global_object.default_role # default role
         p_r_dict_sorted_str = "\n".join(
-            [f"{p_role}: {p_name}" for p_name, p_role in p_r_dict_sorted])
+            [f"{p_name}: {p_role}" if p_role == d_role[p_name] else f"{p_name}: {d_role[p_name]}→{p_role}" for p_name, p_role in p_r_dict_sorted])
         self.broadcast_data("役職は以下の通りでした.\n" + p_r_dict_sorted_str)
 
     def show_alive_players(self):
@@ -688,6 +696,7 @@ class MasterThread(Thread):
         else:
             # 以降ゲームが成立する場合、実施
             self.broadcast_data("役職選択の結果、このゲームは成立します.")
+            self.save_default_role()
 
             self.check_fox_immoral()
 
