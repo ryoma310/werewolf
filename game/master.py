@@ -639,7 +639,7 @@ class MasterThread(Thread):
             self.broadcast_data(log)
 
     def calc_discuss_time(self) -> (str, int):
-        player_num = self.global_object.player_num
+        player_num = len(self.global_object.players_alive)
         if player_num in [3,4]:
             d_str_ = "2分"
             d_time_ = datetime.timedelta(minutes=2, seconds=0).total_seconds()
